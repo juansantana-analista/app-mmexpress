@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.g3pay",
+      "sha256_cert_fingerprints": [
+        "59:9F:5E:F5:64:96:D8:D5:8F:CA:E0:87:77:38:93:38:7E:09:A9:27:7E:F1:77:B6:20:DE:9D:3E:51:48:19:00"
+      ]
+    }
+  }
+]
