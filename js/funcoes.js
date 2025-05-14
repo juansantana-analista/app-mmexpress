@@ -52,29 +52,29 @@ function deleteCookie(name) {
 // Fim função validar login
   
   //Inicio Funçao listar categorias
-// Função estática para listar categorias - mantém exatamente a mesma estrutura
+// Modificação da função listarCategorias() - substituindo pelas novas categorias de serviços
 function listarCategorias() {
   console.log("Carregando categorias estáticas");
   
   // Simular carregamento
   app.dialog.preloader("Carregando...");
   
-  // Dados estáticos - 3 categorias para demonstração
+  // Dados estáticos - categorias para o novo modelo de negócio
   const categorias = [
     {
       id: 1,
-      nome: "Serviços",
-      icone: "ri-tools-line"
+      nome: "Serasa",
+      icone: "ri-bank-line"
     },
     {
       id: 2,
-      nome: "Sistemas",
-      icone: "ri-windows-line"
+      nome: "Certificado Digital",
+      icone: "ri-shield-check-line"
     },
     {
       id: 3,
-      nome: "Certificado Digital",
-      icone: "ri-shield-check-line"
+      nome: "Sistemas",
+      icone: "ri-computer-line"
     }
   ];
   
@@ -87,7 +87,7 @@ function listarCategorias() {
       <div class="category-icon">
         <i class="mdi mdi-apps"></i>
       </div>
-      <div class="category-name">Todas</div>
+      <div class="category-name">Todos</div>
     </div>
   `;
   $("#container-categorias").append(opcaoTodasHTML);
@@ -144,6 +144,7 @@ function listarCategorias() {
   // Fechar o diálogo
   app.dialog.close();
 }
+
 
 // Função para rolar até a categoria selecionada
 function scrollToCategory(categoryElement) {
@@ -340,142 +341,128 @@ function showSwipeHint() {
   //Fim Função Lista categorias
   
   //Inicio Funçao listar produtos tela Home
-  function listarProdutos(searchQuery = "", categoriaId = null) {
-    console.log("Carregando produtos estáticos, busca:", searchQuery, "categoria:", categoriaId);
-    
-    // Simular carregamento
-    app.dialog.preloader("Carregando...");
-    
-    // Simular tempo de carregamento
-    setTimeout(() => {
-      // Array de produtos estáticos
-      const produtos = [
-        {
-          id: 1,
-          nome: "Complexo Vitamínico Multi-Mineral",
-          preco: "89.90",
-          preco2: "99.90",
-          preco_lojavirtual: "89.90",
-          foto: "img/produto1.jpg",
-          categoria_id: 1
-        },
-        {
-          id: 2,
-          nome: "Proteína Vegetal 100% Natural",
-          preco: "129.90",
-          preco2: "149.90",
-          preco_lojavirtual: "129.90",
-          foto: "img/produto2.jpg",
-          categoria_id: 2
-        },
-        {
-          id: 3,
-          nome: "Óleo de Coco Extravirgem Orgânico",
-          preco: "59.90",
-          preco2: "69.90",
-          preco_lojavirtual: "59.90",
-          foto: "img/produto3.jpg",
-          categoria_id: 3
-        }
-      ];
+function listarProdutos(searchQuery = "", categoriaId = null) {  
+  // Simular carregamento
+  app.dialog.preloader("Carregando...");
   
-      // Filtrar produtos se uma pesquisa for fornecida
-      let produtosFiltrados = produtos;
-      
-      if (searchQuery && searchQuery.length >= 3) {
-        produtosFiltrados = produtos.filter(p => 
-          p.nome.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+  // Simular tempo de carregamento
+  setTimeout(() => {
+    // Array de produtos estáticos - os novos serviços
+    const produtos = [
+      {
+        id: 1,
+        nome: "Serasa",
+        descricao: "Soluções completas para análise de crédito, monitoramento e recuperação financeira.",
+        preco: "29.90",
+        preco2: "39.90",
+        preco_lojavirtual: "29.90",
+        foto: "img/serasa.jpeg",
+        categoria_id: 1
+      },
+      {
+        id: 2,
+        nome: "Certificado Digital",
+        descricao: "Certificado Digital A1 e A3, e-CNPJ e e-CPF: identidades digitais seguras para emissão de notas fiscais, acesso ao e-CAC, assinatura de documentos e obrigações fiscais.",
+        preco: "89.90",
+        preco2: "99.90",
+        preco_lojavirtual: "89.90",
+        foto: "https://dnafinanceiro.com/blog/wp-content/uploads/2022/06/Certificado-Digital.jpg",
+        categoria_id: 2
+      },
+      {
+        id: 3,
+        nome: "Emissor de Nota Fiscal",
+        descricao: "Emissor de Nota Fiscal Eletrônica (NF-e e NFC-e): solução prática e segura para emissão, envio e gestão de notas fiscais com validade legal.",
+        preco: "199.90",
+        preco2: "249.90",
+        preco_lojavirtual: "199.90",
+        foto: "img/tscontrol.png",
+        categoria_id: 3
       }
+    ];
+
+    // Filtrar produtos se uma pesquisa for fornecida
+    let produtosFiltrados = produtos;
+    
+    if (searchQuery && searchQuery.length >= 3) {
+      produtosFiltrados = produtos.filter(p => 
+        p.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.descricao.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Filtrar por categoria se fornecida
+    if (categoriaId) {
+      produtosFiltrados = produtosFiltrados.filter(p => 
+        p.categoria_id == categoriaId
+      );
+    }
+    
+    // Limpar o container de produtos
+    $("#container-produtos").empty();
+
+    // Adicionar produtos filtrados
+    produtosFiltrados.forEach((produto) => {
+      var produtoPreco = formatarMoeda(parseFloat(produto.preco_lojavirtual));
+      const imagemProduto = produto.foto ? produto.foto : "img/default.png";
+      const nomeProduto = truncarNome(produto.nome, 40);
+      const rating = 5;
+
+      var produtoHTML = `
+        <!-- ITEM CARD (Novo estilo para serviços) -->
+        <div class="item-card">
+          <a data-id="${produto.id}" 
+             data-nome="${produto.nome}" 
+             data-preco="${produto.preco}"
+             data-preco2="${produto.preco2}"
+             data-preco_lojavirtual="${produto.preco_lojavirtual}"
+             data-imagem="${imagemProduto}"
+             href="#" class="item">
+            <div class="img-container">
+              <img src="${imagemProduto}" alt="${nomeProduto}">
+            </div>
+            <div class="nome-rating">
+              <span class="color-gray product-name">${nomeProduto.toLocaleUpperCase()}</span>                     
+              <p class="text-sm color-gray" style="margin: 5px 0; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                ${produto.descricao}
+              </p>
+            </div> 
+          </a>
+        </div>
+      `;
       
-      // Filtrar por categoria se fornecida
-      if (categoriaId) {
-        produtosFiltrados = produtosFiltrados.filter(p => 
-          p.categoria_id == categoriaId
-        );
-      }
-      
-      // Limpar o container de produtos
-      $("#container-produtos").empty();
-  
-      // Adicionar produtos filtrados
-      produtosFiltrados.forEach((produto) => {
-        var produtoPreco = formatarMoeda(parseFloat(produto.preco_lojavirtual));
-        const imagemProduto = produto.foto ? produto.foto : "img/default.png";
-        const nomeProduto = truncarNome(produto.nome, 40);
-        const rating = 5;
-  
-        var produtoHTML = `
-          <!-- ITEM CARD-->
-          <div class="item-card">
-            <a data-id="${produto.id}" 
-               data-nome="${produto.nome}" 
-               data-preco="${produto.preco}"
-               data-preco2="${produto.preco2}"
-               data-preco_lojavirtual="${produto.preco_lojavirtual}"
-               data-imagem="${imagemProduto}"
-               href="#" class="item">
-              <div class="img-container">
-                <img src="${imagemProduto}" alt="${nomeProduto}">
-              </div>
-              <div class="nome-rating">
-                <span class="color-gray product-name">${nomeProduto.toLocaleUpperCase()}</span>                     
-                <div class="star-rating">
-                  <span class="star"></span>
-                  <span class="star"></span>
-                  <span class="star"></span>
-                  <span class="star"></span>
-                  <span class="star"></span>
-                </div>
-                <div class="price">${produtoPreco}</div>
-              </div> 
-            </a>
-          </div>
-        `;
-        
-        $("#container-produtos").append(produtoHTML);
-        
-        // Selecionar as estrelas apenas do produto atual
-        const stars = $("#container-produtos")
-          .children()
-          .last()
-          .find(".star-rating .star");
-  
-        // Preencher as estrelas conforme o rating do produto atual
-        for (let i = 0; i < rating; i++) {
-          stars[i].classList.add("filled");
-        }
-      });
-      
-      // Adicionar evento de clique
-      $(".item").on("click", function () {
-        var id = $(this).attr("data-id");
-        var nomeProduto = $(this).attr("data-nome");
-        var preco = $(this).attr("data-preco");
-        var preco2 = $(this).attr("data-preco2");
-        var preco_lojavirtual = $(this).attr("data-preco_lojavirtual");
-        var imagem = $(this).attr("data-imagem");
-        localStorage.setItem("produtoId", id);
-        const produto = {
-          id: id,
-          imagem: imagem,
-          nome: nomeProduto,
-          rating: 5,
-          likes: 5,
-          reviews: 5,
-          preco: preco,
-          preco2: preco2,
-          preco_lojavirtual: preco_lojavirtual,
-        };
-        localStorage.setItem("produto", JSON.stringify(produto));
-        app.views.main.router.navigate("/detalhes/");
-      });
-  
-      // Fechar o diálogo de carregamento
-      app.dialog.close();
-      
-    }, 500); // Simular meio segundo de carregamento
-  }
+      $("#container-produtos").append(produtoHTML);
+    });
+    
+    // Adicionar evento de clique
+    $(".item").on("click", function () {
+      var id = $(this).attr("data-id");
+      var nomeProduto = $(this).attr("data-nome");
+      var preco = $(this).attr("data-preco");
+      var preco2 = $(this).attr("data-preco2");
+      var preco_lojavirtual = $(this).attr("data-preco_lojavirtual");
+      var imagem = $(this).attr("data-imagem");
+      localStorage.setItem("produtoId", id);
+      const produto = {
+        id: id,
+        imagem: imagem,
+        nome: nomeProduto,
+        rating: 5,
+        likes: 5,
+        reviews: 5,
+        preco: preco,
+        preco2: preco2,
+        preco_lojavirtual: preco_lojavirtual,
+      };
+      localStorage.setItem("produto", JSON.stringify(produto));
+      app.views.main.router.navigate("/detalhes/");
+    });
+
+    // Fechar o diálogo de carregamento
+    app.dialog.close();
+    
+  }, 500); // Simular meio segundo de carregamento
+}
   //Fim Função Lista produtos
   
 //Inicio Função Detalhes Produto
@@ -1821,21 +1808,20 @@ function openImageZoom(imageSrc) {
   // Fim da função detalhesPedido
   
   //Inicio Funçao Listar Banners
-// Função estática para listar banners (substitui a original)
 function listarBanners() {
   console.log("Carregando banners estáticos");
   
-  // Array de banners estáticos
-  const banners = [
+  // Array de banners estáticos atualizados para os novos serviços
+  const banners = [    
     {
       id: 1,
-      titulo: "Promoção de Vitaminas",
-      url_arquivo: "img/banner1.jpg"
+      titulo: "Monitoramento Contínuo",
+      url_arquivo: "img/banner-emissor.png"
     },
     {
       id: 2,
-      titulo: "Suplementos Naturais",
-      url_arquivo: "img/banner2.jpg"
+      titulo: "Certificado Digital",
+      url_arquivo: "img/banner-certificado.png"
     }
   ];
 
