@@ -2,20 +2,20 @@
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
   "background_color": "#ffffff",
   "dir": "ltr",
-  "name": "Vitatop",
+  "name": "MMExpress",
   "scope": "/",
-  "short_name": "Vitatop",
+  "short_name": "MMExpress",
   "start_url": "https://appvitatop.tecskill.com.br/",
   "id": "br.com.g3pay",
   "display": "fullscreen",
   "display_override": ["standalone", "window-controls-overlay"],
-  "theme_color": "#00591F",
+  "theme_color": "#1d4f91",
   "orientation": "portrait",
   "shortcuts": [
     {
-      "name": "Vitatop",
-      "short_name": "Vitatop",
-      "description": "Gerencie suas vendas e maximize seus ganhos com a Vitatop na palma da mão.",
+      "name": "MMExpress",
+      "short_name": "MMExpress",
+      "description": "Gerencie suas vendas e maximize seus ganhos com a MMExpress na palma da mão.",
       "url": "https://appvitatop.tecskill.com.br/"
     }
   ],
@@ -516,7 +516,7 @@
       "url": "/handle-protocol?url=%s"
     }
   ],
-  "description": "Gerencie suas vendas e maximize seus ganhos com a Vitatop na palma da mão.",
+  "description": "Gerencie suas vendas e maximize seus ganhos com a MMExpress na palma da mão.",
   "lang": "pt",
   "categories": ["business", "finance"]
 }

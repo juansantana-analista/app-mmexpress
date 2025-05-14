@@ -1,339 +1,965 @@
+var appId = "Bearer " + getCookie("userAuthToken");
+
 // Início função validar login
-async function validarToken(userAuthToken) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
-    if (userAuthToken) {
-      const apiServerUrl = "https://vitatop.tecskill.com.br/rest.php";
-  
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + userAuthToken,
-      };
-  
-      const body = JSON.stringify({
-        class: "ProdutoCategoriaRest",
-        method: "loadAll",
-        limit: "1",
-      });
-  
-      const options = {
-        method: "POST",
-        headers: headers,
-        body: body,
-      };
-  
-      try {
-        const response = await fetch(apiServerUrl, options);
-        const data = await response.json();
-        if (data.status == "success") {
-          // Token válido, continua na página atual
-          return true;
-        } else {
-          // Token inválido, redireciona para a página de login
-          return false;
-        }
-      } catch (error) {
-        console.error("Erro ao verificar token:", error);
-        return false;
-      }
-    } else {
-      // Token não existe, redireciona para a página de login
-      return false;
-    }
+function validarToken() {
+  const userAuthToken = getCookie("userAuthToken"); // Lê o token do cookie
+
+  if (!userAuthToken) {
+    return false;
   }
-  // Função para verificar se o token JWT expirou
+
+  try {
+    // Dividir o token e pegar o payload (segunda parte do JWT)
+    const base64Url = userAuthToken.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64));
+
+    // Verificar se há um campo expires e se ele ainda é válido
+    const currentTime = Math.floor(Date.now() / 1000); // Tempo atual em segundos
+    return payload.expires && payload.expires > currentTime;
+  } catch (error) {
+    console.error("Erro ao decodificar o token:", error);
+    return false;
+  }
+}
+
+// Função para definir cookie
+function setCookie(name, value, hours) {
+  let expires = "";
+  if (hours) {
+    const date = new Date();
+    date.setTime(date.getTime() + hours * 60 * 60 * 1000);
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+// Função para obter cookie
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+// Função para remover um cookie
+function deleteCookie(name) {
+  document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+}
+// Fim função validar login
   
   //Inicio Funçao listar categorias
-  function listarCategorias() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
-    app.dialog.preloader("Carregando...");
+// Updated listarCategorias function
+function listarCategorias() {
   
-    // Cabeçalhos da requisição
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-  
-    const body = JSON.stringify({
-      class: "ProdutoCategoriaRest",
-      method: "listarCategorias",
-      limit: 10,
-    });
-  
-    // Opções da requisição
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-  
-    // Fazendo a requisição
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        // Verifica se o status é 'success' e se há dados de categorias
-        if (
-          responseJson.status === "success" &&
-          responseJson.data &&
-          responseJson.data.data
-        ) {
-          const categorias = responseJson.data.data;
-  
-          // Adiciona a opção Todas ao inicio
-          var opcaoTodasHTML =
-            '<div class="swiper-slide"><button class="filter-btn active">TODAS</button></div>';
-          $("#container-categorias").append(opcaoTodasHTML);
-  
-          categorias.forEach((categoria) => {
-            var categoriaHTML = `
-                      <!-- CATEGORIA ITEM-->
-                      <div class="swiper-slide">
-                          <button class="filter-btn" data-id="${categoria.id}">${categoria.nome}</button>
-                      </div>
-                      `;
-  
-            $("#container-categorias").append(categoriaHTML);
-          });
-          // Adiciona o swiper-pagination ao final
-          var swiperPaginationHTML = '<div class="swiper-pagination"></div>';
-          $("#container-categorias").append(swiperPaginationHTML);
-  
-          $(".filter-btn").on("click", function () {
-            // Remove a classe active de todos os botões
-            $(".filter-btn").removeClass("active");
-            // Adiciona a classe active ao botão clicado
-            $(this).addClass("active");
-            // Pega o id da categoria clicada
-            var categoriaId = $(this).data("id");
-            // Chama a função listarProdutos com o id da categoria
-            listarProdutos("", categoriaId);
-          });
-  
-          app.dialog.close();
-        } else {
-          app.dialog.close();
-          // Verifica se há uma mensagem de erro definida
-          const errorMessage =
-            responseJson.message || "Formato de dados inválido";
-          app.dialog.alert(
-            "Erro ao carregar categorias: " + errorMessage,
-            "Falha na requisição!"
-          );
-        }
-      })
-      .catch((error) => {
+  app.dialog.preloader("Carregando...");
+
+  // Cabeçalhos da requisição
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + userAuthToken,
+  };
+
+  const body = JSON.stringify({
+    class: "ProdutoCategoriaRest",
+    method: "listarCategorias",
+  });
+
+  // Opções da requisição
+  const options = {
+    method: "POST",
+    headers: headers,
+    body: body,
+  };
+
+  // Fazendo a requisição
+  fetch(apiServerUrl, options)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      // Verifica se o status é 'success' e se há dados de categorias
+      if (
+        responseJson.status === "success" &&
+        responseJson.data &&
+        responseJson.data.data
+      ) {
+        const categorias = responseJson.data.data;
+        
+        // Limpar o container de categorias
+        $("#container-categorias").empty();
+
+        // Adiciona a opção Todas ao inicio
+        var opcaoTodasHTML = `
+          <div class="category-item active" data-id="todas">
+            <div class="category-icon">
+              <i class="mdi mdi-apps"></i>
+            </div>
+            <div class="category-name">Todas</div>
+          </div>
+        `;
+        $("#container-categorias").append(opcaoTodasHTML);
+
+        // Adicione cada categoria
+        categorias.forEach((categoria) => {
+          var categoriaHTML = `
+            <div class="category-item" data-id="${categoria.id}">
+              <div class="category-icon">
+                <i class="${categoria.icone}"></i>
+              </div>
+              <div class="category-name">${categoria.nome}</div>
+            </div>
+          `;
+        
+          $("#container-categorias").append(categoriaHTML);
+        });
+
+        // Adicione manipuladores de eventos para os itens de categoria
+        $(".category-item").on("click", function() {
+          // Remove a classe ativa de todos os itens
+          $(".category-item").removeClass("active");
+          
+          // Adiciona a classe ativa ao item clicado
+          $(this).addClass("active");
+          
+          // Pega o id da categoria clicada
+          var categoriaId = $(this).data("id");
+          
+          // Se for "todas", define como undefined para listar todos os produtos
+          if(categoriaId === "todas") {
+            categoriaId = undefined;
+          }
+          
+          // Chama a função listarProdutos com o id da categoria
+          listarProdutos("", categoriaId);
+          
+          // Centraliza o item selecionado
+          scrollToCategory(this);
+          
+          // Atualiza os indicadores de rolagem
+          updateScrollIndicators();
+        });
+        
+        // Configurar os indicadores de rolagem
+        setupScrollIndicators();
+        
+        // Configurar botões de rolagem
+        setupScrollButtons();
+        
+        // Mostrar dica de rolagem na primeira vez
+        showSwipeHint();
+
         app.dialog.close();
-        console.error("Erro:", error);
+      } else {
+        app.dialog.close();
+        // Verifica se há uma mensagem de erro definida
+        const errorMessage =
+          responseJson.message || "Formato de dados inválido";
         app.dialog.alert(
-          "Erro ao carregar categorias: " + error.message,
+          "Erro ao carregar categorias: " + errorMessage,
           "Falha na requisição!"
         );
-      });
+      }
+    })
+    .catch((error) => {
+      app.dialog.close();
+      console.error("Erro:", error);
+      app.dialog.alert(
+        "Erro ao carregar categorias: " + error.message,
+        "Falha na requisição!"
+      );
+    });
+}
+
+// Função para rolar até a categoria selecionada
+function scrollToCategory(categoryElement) {
+  const container = document.querySelector('.categories-scroll-wrapper');
+  const item = categoryElement;
+  
+  if(container && container.scrollWidth > container.clientWidth) {
+    const itemOffset = item.offsetLeft;
+    const containerWidth = container.clientWidth;
+    const scrollLeft = itemOffset - (containerWidth / 2) + (item.offsetWidth / 2);
+    
+    container.scrollTo({
+      left: scrollLeft,
+      behavior: 'smooth'
+    });
   }
+}
+
+// Função para configurar os indicadores de rolagem
+function setupScrollIndicators() {
+  const container = document.querySelector('.categories-scroll-wrapper');
+  const dotsContainer = document.querySelector('.scroll-dots');
+  
+  if(!container || !dotsContainer) return;
+  
+  // Limpar indicadores existentes
+  dotsContainer.innerHTML = '';
+  
+  // Determinar quantos indicadores são necessários
+  const containerWidth = container.clientWidth;
+  const scrollWidth = container.scrollWidth;
+  
+  if(scrollWidth <= containerWidth) {
+    // Não há necessidade de rolagem, esconde os indicadores
+    document.querySelector('.scroll-indicator').style.display = 'none';
+    document.querySelector('.scroll-arrow.scroll-left').style.display = 'none';
+    document.querySelector('.scroll-arrow.scroll-right').style.display = 'none';
+    return;
+  }
+  
+  // Mostra os indicadores e botões de rolagem
+  document.querySelector('.scroll-indicator').style.display = 'flex';
+  document.querySelector('.scroll-arrow.scroll-left').style.display = 'flex';
+  document.querySelector('.scroll-arrow.scroll-right').style.display = 'flex';
+  
+  // Calcular o número de "páginas" de rolagem
+  const numDots = Math.ceil(scrollWidth / containerWidth);
+  
+  // Criar os indicadores
+  for(let i = 0; i < numDots; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('data-index', i);
+    dotsContainer.appendChild(dot);
+    
+    // Adicionar evento de clique para cada indicador
+    dot.addEventListener('click', function() {
+      const index = parseInt(this.getAttribute('data-index'));
+      container.scrollTo({
+        left: index * containerWidth,
+        behavior: 'smooth'
+      });
+    });
+  }
+  
+  // Atualizar indicadores ao rolar
+  container.addEventListener('scroll', function() {
+    updateScrollIndicators();
+  });
+}
+
+// Função para atualizar os indicadores de rolagem
+function updateScrollIndicators() {
+  const container = document.querySelector('.categories-scroll-wrapper');
+  const dots = document.querySelectorAll('.scroll-dots .dot');
+  const leftArrow = document.querySelector('.scroll-arrow.scroll-left');
+  const rightArrow = document.querySelector('.scroll-arrow.scroll-right');
+  
+  if(!container || !dots.length) return;
+  
+  const scrollPosition = container.scrollLeft;
+  const containerWidth = container.clientWidth;
+  const scrollWidth = container.scrollWidth;
+  
+  // Atualizar visibilidade dos botões de seta
+  if(scrollPosition <= 10) {
+    leftArrow.style.opacity = '0.5';
+    leftArrow.style.pointerEvents = 'none';
+  } else {
+    leftArrow.style.opacity = '1';
+    leftArrow.style.pointerEvents = 'auto';
+  }
+  
+  if(scrollPosition + containerWidth >= scrollWidth - 10) {
+    rightArrow.style.opacity = '0.5';
+    rightArrow.style.pointerEvents = 'none';
+  } else {
+    rightArrow.style.opacity = '1';
+    rightArrow.style.pointerEvents = 'auto';
+  }
+  
+  // Calcular o índice do indicador ativo
+  const activeIndex = Math.round(scrollPosition / containerWidth);
+  
+  // Atualizar a classe ativa dos indicadores
+  dots.forEach((dot, index) => {
+    if(index === activeIndex) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
+}
+
+// Função para configurar botões de rolagem
+function setupScrollButtons() {
+  const container = document.querySelector('.categories-scroll-wrapper');
+  const leftButton = document.querySelector('.scroll-arrow.scroll-left');
+  const rightButton = document.querySelector('.scroll-arrow.scroll-right');
+  
+  if(!container || !leftButton || !rightButton) return;
+  
+  // Configurar botão de rolagem para esquerda
+  leftButton.addEventListener('click', function() {
+    const scrollAmount = container.clientWidth * 0.8;
+    container.scrollBy({
+      left: -scrollAmount,
+      behavior: 'smooth'
+    });
+  });
+  
+  // Configurar botão de rolagem para direita
+  rightButton.addEventListener('click', function() {
+    const scrollAmount = container.clientWidth * 0.8;
+    container.scrollBy({
+      left: scrollAmount,
+      behavior: 'smooth'
+    });
+  });
+}
+
+// Função para mostrar dica de rolagem
+function showSwipeHint() {
+  // Verificar se já mostrou a dica antes
+  if(localStorage.getItem('swipeHintShown')) return;
+  
+  const container = document.querySelector('.categories-scroll-container');
+  
+  if(!container) return;
+  
+  // Criar elemento de dica
+  const hint = document.createElement('div');
+  hint.className = 'swipe-hint';
+  hint.innerHTML = `
+    <i class="mdi mdi-gesture-swipe-horizontal"></i>
+    <span>Deslize para ver mais</span>
+  `;
+  
+  container.appendChild(hint);
+  
+  // Mostrar a dica após um curto atraso
+  setTimeout(() => {
+    hint.classList.add('show');
+  }, 1000);
+  
+  // Esconder a dica após alguns segundos
+  setTimeout(() => {
+    hint.classList.remove('show');
+    // Remover a dica depois da animação de fade-out
+    setTimeout(() => {
+      hint.remove();
+    }, 300);
+  }, 4000);
+  
+  // Marcar como mostrada
+  localStorage.setItem('swipeHintShown', 'true');
+  
+  // Também esconder se o usuário interagir com o container
+  const scrollContainer = document.querySelector('.categories-scroll-wrapper');
+  if(scrollContainer) {
+    const hideHint = () => {
+      hint.classList.remove('show');
+      setTimeout(() => hint.remove(), 300);
+      scrollContainer.removeEventListener('scroll', hideHint);
+      scrollContainer.removeEventListener('click', hideHint);
+      scrollContainer.removeEventListener('touchstart', hideHint);
+    };
+    
+    scrollContainer.addEventListener('scroll', hideHint);
+    scrollContainer.addEventListener('click', hideHint);
+    scrollContainer.addEventListener('touchstart', hideHint);
+  }
+}
   //Fim Função Lista categorias
   
   //Inicio Funçao listar produtos tela Home
-  function listarProdutos(searchQuery = "", categoriaId, compra) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
-    app.dialog.preloader("Carregando...");
+// Updated listarProdutos function to match the new single-line layout
+function listarProdutos(searchQuery = "", categoriaId) {
   
-    var imgUrl = "https://vitatop.tecskill.com.br/";
-  
-    // Cabeçalhos da requisição
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-  
-    const body = JSON.stringify({
-      class: "ProdutoVariacaoRest",
-      method: "listarProdutos",
-      categoria_id: categoriaId,
-      search: searchQuery,
-      limit: 30,
-    });
-  
-    // Opções da requisição
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-  
-    // Fazendo a requisição
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        // Verifica se o status é 'success' e se há dados de pedidos
-        if (
-          responseJson.status === "success" &&
-          responseJson.data &&
-          responseJson.data.data
-        ) {
-          const produtos = responseJson.data.data;
-          $("#container-produtos").empty();
-  
-          produtos.forEach((produto) => {
-            var produtoPreco = "";
-            if (compra == "compra") {
-              produtoPreco = formatarMoeda(produto.preco);
-            } else {
-              produtoPreco = formatarMoeda(produto.preco_lojavirtual);
-            }
-            var imgUrl = "https://vitatop.tecskill.com.br/";
-            const imagemProduto = produto.foto
-              ? imgUrl + produto.foto
-              : "img/default.png";
-            const nomeProduto = truncarNome(produto.nome, 18);
-            const rating = 5;
-  
-            var produtoHTML = `
-                      <!-- ITEM CARD-->
-                      <div class="item-card">
-                          <a data-id="${produto.id}" 
-                          data-nome="${produto.nome}" 
-                          data-preco="${produto.preco}"
-                          data-preco2="${produto.preco2}"
-                          data-preco_lojavirtual="${produto.preco_lojavirtual}"
-                          data-imagem="${imagemProduto}"
-                          href="#" class="item">
-                              <div class="img-container">
-                                  <img src="${imagemProduto}">
+  app.dialog.preloader("Carregando...");
+
+  var imgUrl = "https://vitatop.tecskill.com.br/";
+
+  // Cabeçalhos da requisição
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + userAuthToken,
+  };
+
+  const body = JSON.stringify({
+    class: "ProdutoVariacaoRest",
+    method: "listarProdutos",
+    categoria_id: categoriaId,
+    search: searchQuery,
+    limit: 30,
+  });
+
+  // Opções da requisição
+  const options = {
+    method: "POST",
+    headers: headers,
+    body: body,
+  };
+
+  // Fazendo a requisição
+  fetch(apiServerUrl, options)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      // Verifica se o status é 'success' e se há dados de pedidos
+      if (
+        responseJson.status === "success" &&
+        responseJson.data &&
+        responseJson.data.data
+      ) {
+        const produtos = responseJson.data.data;
+        $("#container-produtos").empty();
+
+        produtos.forEach((produto) => {
+          var produtoPreco = formatarMoeda(produto.preco_lojavirtual);
+
+          var imgUrl = "https://vitatop.tecskill.com.br/";
+          const imagemProduto = produto.foto
+            ? imgUrl + produto.foto
+            : "img/default.png";
+          const nomeProduto = truncarNome(produto.nome, 40); // Increased character limit
+          const rating = 5;
+
+          var produtoHTML = `
+                  <!-- ITEM CARD-->
+                  <div class="item-card">
+                      <a data-id="${produto.id}" 
+                      data-nome="${produto.nome}" 
+                      data-preco="${produto.preco}"
+                      data-preco2="${produto.preco2}"
+                      data-preco_lojavirtual="${produto.preco_lojavirtual}"
+                      data-imagem="${imagemProduto}"
+                      href="#" class="item">
+                          <div class="img-container">
+                              <img src="${imagemProduto}" alt="${nomeProduto}">
+                          </div>
+                          <div class="nome-rating">
+                                  <span class="color-gray product-name">${nomeProduto.toLocaleUpperCase()}</span>                     
+                              <div class="star-rating">
+                                  <span class="star"></span>
+                                  <span class="star"></span>
+                                  <span class="star"></span>
+                                  <span class="star"></span>
+                                  <span class="star"></span>
                               </div>
-                              <div class="nome-rating">
-                                      <span class="color-gray">${nomeProduto.toLocaleUpperCase()}</span>                     
-                                  <div class="star-rating">
-                                      <span class="star"></span>
-                                      <span class="star"></span>
-                                      <span class="star"></span>
-                                      <span class="star"></span>
-                                      <span class="star"></span>
-                                  </div>
-                                  <div class="price">${produtoPreco}</div>
-                              </div> 
-                          </a>
-                      </div>
-                      `;
-            $("#container-produtos").append(produtoHTML);
-            // Selecionar as estrelas apenas do produto atual
-            const stars = $("#container-produtos")
-              .children()
-              .last()
-              .find(".star-rating .star");
-  
-            // Preencher as estrelas conforme o rating do produto atual
-            for (let i = 0; i < rating; i++) {
-              stars[i].classList.add("filled");
-            }
-          });
-          $(".item").on("click", function () {
-            var id = $(this).attr("data-id");
-            var nomeProduto = $(this).attr("data-nome");
-            var preco = $(this).attr("data-preco");
-            var preco2 = $(this).attr("data-preco2");
-            var preco_lojavirtual = $(this).attr("data-preco_lojavirtual");
-            var imagem = $(this).attr("data-imagem");
-            localStorage.setItem("produtoId", id);
-            const produto = {
-              id: id,
-              imagem: imagem,
-              nome: nomeProduto,
-              rating: 5,
-              likes: 5,
-              reviews: 5,
-              preco: preco,
-              preco2: preco2,
-              preco_lojavirtual: preco_lojavirtual,
-            };
-            localStorage.setItem("produto", JSON.stringify(produto));
-            app.views.main.router.navigate("/detalhes/");
-          });
-  
-          app.dialog.close();
-        } else {
-          app.dialog.close();
-          // Verifica se há uma mensagem de erro definida
-          const errorMessage =
-            responseJson.message || "Formato de dados inválido";
-          app.dialog.alert(
-            "Erro ao carregar pedidos: " + errorMessage,
-            "Falha na requisição!"
-          );
-        }
-      })
-      .catch((error) => {
+                              <div class="price">${produtoPreco}</div>
+                          </div> 
+                      </a>
+                  </div>
+                  `;
+          $("#container-produtos").append(produtoHTML);
+          
+          // Selecionar as estrelas apenas do produto atual
+          const stars = $("#container-produtos")
+            .children()
+            .last()
+            .find(".star-rating .star");
+
+          // Preencher as estrelas conforme o rating do produto atual
+          for (let i = 0; i < rating; i++) {
+            stars[i].classList.add("filled");
+          }
+        });
+        
+        // Adicionar evento de clique
+        $(".item").on("click", function () {
+          var id = $(this).attr("data-id");
+          var nomeProduto = $(this).attr("data-nome");
+          var preco = $(this).attr("data-preco");
+          var preco2 = $(this).attr("data-preco2");
+          var preco_lojavirtual = $(this).attr("data-preco_lojavirtual");
+          var imagem = $(this).attr("data-imagem");
+          localStorage.setItem("produtoId", id);
+          const produto = {
+            id: id,
+            imagem: imagem,
+            nome: nomeProduto,
+            rating: 5,
+            likes: 5,
+            reviews: 5,
+            preco: preco,
+            preco2: preco2,
+            preco_lojavirtual: preco_lojavirtual,
+          };
+          localStorage.setItem("produto", JSON.stringify(produto));
+          app.views.main.router.navigate("/detalhes/");
+        });
+
         app.dialog.close();
-        console.error("Erro:", error);
+      } else {
+        app.dialog.close();
+        // Verifica se há uma mensagem de erro definida
+        const errorMessage =
+          responseJson.message || "Formato de dados inválido";
         app.dialog.alert(
-          "Erro ao carregar pedidos: " + error.message,
+          "Erro ao carregar produtos: " + errorMessage,
           "Falha na requisição!"
         );
-      });
-  }
+      }
+    })
+    .catch((error) => {
+      app.dialog.close();
+      console.error("Erro:", error);
+      app.dialog.alert(
+        "Erro ao carregar produtos: " + error.message,
+        "Falha na requisição!"
+      );
+    });
+}
   //Fim Função Lista produtos
   
-  //Inicio Função Detalhes Produto
-  function buscarProduto(produtoId) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
-    app.dialog.preloader("Carregando...");
+//Inicio Função Detalhes Produto
+// Função para inicializar a exibição dos benefícios do produto
+function initializeBenefits(benefits) {
+  // Container onde os benefícios serão inseridos
+  const benefitsContainer = document.querySelector('.benefits');
   
-    var imgUrl = "https://vitatop.tecskill.com.br/";
+  // Manter apenas o título dos benefícios
+  benefitsContainer.innerHTML = `
+      <div class="benefits-title">
+          Benefícios do Produto
+          <i class="fas fa-capsules"></i>
+      </div>
+  `;
   
-    // Cabeçalhos da requisição
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-  
-    const body = JSON.stringify({
-      class: "ProdutoVariacaoRest",
-      method: "load",
-      id: produtoId,
-    });
-  
-    // Opções da requisição
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-  
-    // Fazendo a requisição
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        // Verifica se o status é 'success' e se há dados de pedidos
-        if (responseJson.status === "success") {
-          const detalhes = responseJson.data;
-  
-          $("#product-name").html(detalhes.nome);
-          $("#descricao-detalhe").html(detalhes.descricao_app);
-  
-          app.dialog.close();
-        } else {
-          app.dialog.close();
-          // Verifica se há uma mensagem de erro definida
-          const errorMessage =
-            responseJson.message || "Formato de dados inválido";
-          app.dialog.alert(
-            "Erro ao carregar produtos: " + errorMessage,
-            "Falha na requisição!"
-          );
-        }
-      })
-      .catch((error) => {
-        app.dialog.close();
-        console.error("Erro:", error);
-        app.dialog.alert(
-          "Erro ao carregar produtos: " + error.message,
-          "Falha na requisição!"
-        );
+  // Verifica se há benefícios para exibir
+  if (benefits && benefits.length > 0) {
+      // Adiciona cada benefício dinamicamente
+      benefits.forEach(benefit => {
+          const benefitItem = document.createElement('div');
+          benefitItem.className = 'benefit-item';
+          benefitItem.setAttribute('data-benefit', benefit.id);
+          
+          benefitItem.innerHTML = `
+              <div class="benefit-icon" style="background-color: ${benefit.cor_icone || '#00a676'}">
+                  <i class="${benefit.icone || 'fas fa-check'}"></i>
+              </div>
+              <div class="benefit-content">
+                  <div class="benefit-title">${benefit.nome}</div>
+                  <div class="view-more">Ver mais <i class="fas fa-chevron-right"></i></div>
+              </div>
+          `;
+          
+          benefitsContainer.appendChild(benefitItem);
       });
+      
+      // Adiciona o evento de clique para cada benefício
+      document.querySelectorAll('.benefit-item').forEach(item => {
+          item.addEventListener("click", function() {
+              const benefitId = this.getAttribute("data-benefit");
+              const benefit = benefits.find(b => b.id === benefitId);
+              
+              if (benefit) {
+                  // Atualiza o conteúdo do modal
+                  document.getElementById("modalTitle").textContent = benefit.nome;
+                  document.getElementById("modalDescription").textContent = benefit.descricao;
+                  
+                  // Exibe o modal
+                  const modal = document.getElementById("benefitModal");
+                  modal.style.display = "flex";
+              }
+          });
+      });
+      
+      // Configurar o fechamento do modal
+      const closeModal = document.querySelector(".close-modal");
+      if (closeModal) {
+          closeModal.addEventListener("click", function() {
+              const modal = document.getElementById("benefitModal");
+              modal.style.display = "none";
+          });
+      }
+      
+      // Permitir fechar o modal clicando fora dele
+      const modal = document.getElementById("benefitModal");
+      if (modal) {
+          window.addEventListener("click", function(event) {
+              if (event.target === modal) {
+                  modal.style.display = "none";
+              }
+          });
+      }
+  } else {
+      // Caso não haja benefícios, exibe uma mensagem
+      const noBenefitsItem = document.createElement('div');
+      noBenefitsItem.className = 'benefit-item';
+      noBenefitsItem.innerHTML = `
+          <div class="benefit-icon">
+              <i class="fas fa-info"></i>
+          </div>
+          <div class="benefit-content">
+              <div class="benefit-title">Informações Indisponíveis</div>
+              <div>Nenhum benefício cadastrado para este produto.</div>
+          </div>
+      `;
+      
+      benefitsContainer.appendChild(noBenefitsItem);
   }
-  //Fim Função Detalhes Produto
+}
+
+// Modifica a função buscarProduto para usar os benefícios dinâmicos
+function buscarProduto(produtoId) {
+app.dialog.preloader("Carregando...");
+
+var imgUrl = "https://vitatop.tecskill.com.br/";
+
+// Cabeçalhos da requisição
+const headers = {
+  "Content-Type": "application/json",
+  Authorization: "Bearer " + userAuthToken,
+};
+
+const body = JSON.stringify({
+  class: "ProdutoVariacaoRest",
+  method: "obterProdutoCompleto",
+  produto_id: produtoId,
+});
+
+// Opções da requisição
+const options = {
+  method: "POST",
+  headers: headers,
+  body: body,
+};
+
+// Fazendo a requisição
+fetch(apiServerUrl, options)
+  .then((response) => response.json())
+  .then((responseJson) => {
+    // Verifica se o status é 'success' e se há dados de pedidos
+    if (responseJson.status === "success" && responseJson.data.status === "success") {
+      const detalhes = responseJson.data.data;      
+      var produtoPreco = "";
+      
+      // Preparar as imagens para o carrossel
+      const fotoPrincipal = detalhes.foto ? imgUrl + detalhes.foto : "img/default.png";
+      
+      // Array para armazenar todas as fotos do produto
+      let fotos = [];
+      
+      // Adiciona a foto principal
+      if (detalhes.foto) {
+        fotos.push(imgUrl + detalhes.foto);
+      }
+      
+      // Verificar e adicionar fotos adicionais
+      if (detalhes.foto2) fotos.push(imgUrl + detalhes.foto2);
+      if (detalhes.foto3) fotos.push(imgUrl + detalhes.foto3);
+      if (detalhes.foto4) fotos.push(imgUrl + detalhes.foto4);
+      if (detalhes.foto5) fotos.push(imgUrl + detalhes.foto5);
+      if (detalhes.foto6) fotos.push(imgUrl + detalhes.foto6);
+      
+      // Se não houver fotos, adiciona a imagem padrão
+      if (fotos.length === 0) {
+        fotos.push("img/default.png");
+      }
+      
+      // Atualizar HTML para o carrossel principal
+      const swiperWrapper = document.querySelector("#product-gallery-main .swiper-wrapper");
+      const thumbsWrapper = document.querySelector("#product-gallery-thumbs .swiper-wrapper");
+      
+      if (swiperWrapper && thumbsWrapper) {
+        swiperWrapper.innerHTML = "";
+        thumbsWrapper.innerHTML = "";
+        
+        fotos.forEach((foto, index) => {
+          // Slides principais
+          const slide = document.createElement("div");
+          slide.className = "swiper-slide";
+          slide.innerHTML = `<img src="${foto}" alt="${detalhes.nome} - Imagem ${index+1}" class="product-image">`;
+          swiperWrapper.appendChild(slide);
+          
+          // Miniaturas
+          const thumbSlide = document.createElement("div");
+          thumbSlide.className = "swiper-slide";
+          thumbSlide.innerHTML = `<img src="${foto}" alt="Miniatura ${index+1}" class="thumb-image">`;
+          thumbsWrapper.appendChild(thumbSlide);
+        });
+        
+        // Inicializar o swiper de miniaturas
+        const thumbsSwiper = new Swiper("#product-gallery-thumbs", {
+          slidesPerView: 4,
+          spaceBetween: 10,
+          freeMode: true,
+          watchSlidesProgress: true,
+          breakpoints: {
+            // quando a largura da janela é >= 320px
+            320: {
+              slidesPerView: 3,
+              spaceBetween: 5
+            },
+            // quando a largura da janela é >= 480px
+            480: {
+              slidesPerView: 4,
+              spaceBetween: 8
+            },
+            // quando a largura da janela é >= 768px
+            768: {
+              slidesPerView: 5,
+              spaceBetween: 10
+            }
+          }
+        });
+        
+        // Inicializar o swiper principal
+        const mainSwiper = new Swiper("#product-gallery-main", {
+          slidesPerView: 1,
+          spaceBetween: 10,
+          loop: fotos.length > 1,
+          autoplay: {
+            delay: 5000, // Auto-play a cada 5 segundos
+            disableOnInteraction: false, // Continua o autoplay mesmo após interação
+            pauseOnMouseEnter: true // Pausa ao passar o mouse
+          },
+          pagination: {
+            el: ".swiper-pagination",
+            clickable: true,
+          },
+          navigation: {
+            nextEl: ".swiper-button-next",
+            prevEl: ".swiper-button-prev",
+          },
+          thumbs: {
+            swiper: thumbsSwiper,
+          }
+        });
+        
+        // Adicionar evento de clique para o zoom
+        document.querySelectorAll(".product-image").forEach((img) => {
+          img.addEventListener("click", function() {
+            openImageZoom(this.src);
+          });
+        });
+      }
+      
+      //ALIMENTAR COM OS VALORES DO ITEM
+      $("#imagem-detalhe").attr('src', fotoPrincipal);
+      $("#imagemShare").attr('src', fotoPrincipal);
+      $("#nome-detalhe").html(detalhes.nome.toUpperCase());
+      $("#nomeShare").html(detalhes.nome.toUpperCase());
+      
+      var precoLucro = detalhes.preco_lojavirtual - detalhes.preco;
+      $("#precoOriginal").html(formatarMoeda(detalhes.preco_lojavirtual));
+      $("#precoDesconto").html(formatarMoeda(detalhes.preco));
+      $("#precoRevenda").html(formatarMoeda(detalhes.preco_lojavirtual));
+      $("#precoLucro").html(formatarMoeda(precoLucro));
+      //$("#precopromo-detalhe").html(produtoPreco);
+
+      // Selecione a div onde você quer adicionar o link
+      const $container = $('#containerBtnCarrinho');
+      // Crie o link e configure os atributos
+      const $btnAddCarrinho = $('<button></button>')
+          .text('Adicionar Carrinho')
+          .attr('data-produto-id', '123')
+          .attr('id', 'botaoCarrinho')
+          .addClass('add-cart');
+  
+      // Anexe o link ao container
+      $container.append($btnAddCarrinho);
+      produtoId = detalhes.id;
+  
+      //CLICOU NO ADICIONAR CARRINHO
+      $("#addCarrinho").on('click', function () {
+          //ADICIONAR AO CARRINHO
+          adicionarItemCarrinho(produtoId);
+      });
+      
+      //CLICOU NO ADICIONAR CARRINHO
+      $("#comprarAgora").on('click', function () {
+          //ADICIONAR AO CARRINHO
+          adicionarItemCarrinho(produtoId);
+      });
+
+      // Inicializa os benefícios do produto
+      initializeBenefits(detalhes.beneficios);
+
+      localStorage.setItem('produtoDetalhes', JSON.stringify({detalhes}));
+      app.dialog.close();
+    } else {
+      app.dialog.close();
+      // Verifica se há uma mensagem de erro definida
+      const errorMessage =
+        responseJson.message || "Formato de dados inválido";
+      app.dialog.alert(
+        "Erro ao carregar produtos: " + errorMessage,
+        "Falha na requisição!"
+      );
+    }
+  })
+  .catch((error) => {
+    app.dialog.close();
+    console.error("Erro:", error);
+    app.dialog.alert(
+      "Erro ao carregar produtos: " + error.message,
+      "Falha na requisição!"
+    );
+  });
+}
+
+// Função para abrir o zoom da imagem
+function openImageZoom(imageSrc) {
+// Remover qualquer zoom anterior se existir
+$('#imageZoomPopup').remove();
+
+// Criar elemento para o popup de zoom
+const zoomPopup = `
+  <div id="imageZoomPopup" class="image-zoom-popup">
+    <div class="image-zoom-container">
+      <div class="image-zoom-close">×</div>
+      <div class="image-zoom-content">
+        <img src="${imageSrc}" alt="Zoom da imagem" class="zoom-image">
+      </div>
+    </div>
+  </div>
+`;
+
+// Adicionar o popup ao final do body
+$('body').append(zoomPopup);
+
+// Mostrar o popup com animação
+setTimeout(() => {
+  $('#imageZoomPopup').addClass('active');
+}, 10);
+
+// Fechar o popup ao clicar no botão de fechar ou fora da imagem
+$('#imageZoomPopup, .image-zoom-close').on('click', function(e) {
+  if (e.target === this || $(e.target).hasClass('image-zoom-close')) {
+    $('#imageZoomPopup').removeClass('active');
+    setTimeout(() => {
+      $('#imageZoomPopup').remove();
+    }, 300);
+  }
+});
+
+// Implementar gestos de pinch zoom se estiver em um dispositivo móvel
+const zoomImage = document.querySelector('.zoom-image');
+if (zoomImage && window.Hammer) {
+  const hammer = new Hammer(zoomImage);
+  let scale = 1;
+  let posX = 0;
+  let posY = 0;
+  let lastScale = 1;
+  let lastPosX = 0;
+  let lastPosY = 0;
+  
+  hammer.get('pinch').set({ enable: true });
+  hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+  
+  hammer.on('pinch pan', function(ev) {
+    if (ev.type === 'pinch') {
+      scale = Math.max(1, Math.min(lastScale * ev.scale, 4));
+    }
+    
+    if (ev.type === 'pan' && scale !== 1) {
+      posX = lastPosX + ev.deltaX;
+      posY = lastPosY + ev.deltaY;
+    }
+    
+    zoomImage.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+  });
+  
+  hammer.on('pinchend panend', function() {
+    lastScale = scale;
+    lastPosX = posX;
+    lastPosY = posY;
+  });
+  
+  // Duplo toque para resetar zoom
+  hammer.on('doubletap', function() {
+    scale = 1;
+    posX = 0;
+    posY = 0;
+    lastScale = 1;
+    lastPosX = 0;
+    lastPosY = 0;
+    zoomImage.style.transform = `translate(0, 0) scale(1)`;
+  });
+}
+}
+
+// Função para abrir o zoom da imagem
+function openImageZoom(imageSrc) {
+  // Remover qualquer zoom anterior se existir
+  $('#imageZoomPopup').remove();
+  
+  // Criar elemento para o popup de zoom
+  const zoomPopup = `
+    <div id="imageZoomPopup" class="image-zoom-popup">
+      <div class="image-zoom-container">
+        <div class="image-zoom-close">×</div>
+        <div class="image-zoom-content">
+          <img src="${imageSrc}" alt="Zoom da imagem" class="zoom-image">
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Adicionar o popup ao final do body
+  $('body').append(zoomPopup);
+  
+  // Mostrar o popup com animação
+  setTimeout(() => {
+    $('#imageZoomPopup').addClass('active');
+  }, 10);
+  
+  // Fechar o popup ao clicar no botão de fechar ou fora da imagem
+  $('#imageZoomPopup, .image-zoom-close').on('click', function(e) {
+    if (e.target === this || $(e.target).hasClass('image-zoom-close')) {
+      $('#imageZoomPopup').removeClass('active');
+      setTimeout(() => {
+        $('#imageZoomPopup').remove();
+      }, 300);
+    }
+  });
+  
+  // Implementar gestos de pinch zoom se estiver em um dispositivo móvel
+  const zoomImage = document.querySelector('.zoom-image');
+  if (zoomImage && window.Hammer) {
+    const hammer = new Hammer(zoomImage);
+    let scale = 1;
+    let posX = 0;
+    let posY = 0;
+    let lastScale = 1;
+    let lastPosX = 0;
+    let lastPosY = 0;
+    
+    hammer.get('pinch').set({ enable: true });
+    hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+    
+    hammer.on('pinch pan', function(ev) {
+      if (ev.type === 'pinch') {
+        scale = Math.max(1, Math.min(lastScale * ev.scale, 4));
+      }
+      
+      if (ev.type === 'pan' && scale !== 1) {
+        posX = lastPosX + ev.deltaX;
+        posY = lastPosY + ev.deltaY;
+      }
+      
+      zoomImage.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    });
+    
+    hammer.on('pinchend panend', function() {
+      lastScale = scale;
+      lastPosX = posX;
+      lastPosY = posY;
+    });
+    
+    // Duplo toque para resetar zoom
+    hammer.on('doubletap', function() {
+      scale = 1;
+      posX = 0;
+      posY = 0;
+      lastScale = 1;
+      lastPosX = 0;
+      lastPosY = 0;
+      zoomImage.style.transform = `translate(0, 0) scale(1)`;
+    });
+  }
+}
+//Fim Função Detalhes Produto
   
   //Inicio Função obter Links
   function buscarLinks(produtoId) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     var codigo_indicador = localStorage.getItem("codigo_indicador");
     app.dialog.preloader("Carregando...");
   
@@ -459,7 +1085,7 @@ async function validarToken(userAuthToken) {
   
   //Inicio Função obter id da Pessoa
   function buscarPessoaId(userId) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
   
     // Cabeçalhos da requisição
@@ -514,7 +1140,7 @@ async function validarToken(userAuthToken) {
   
   //Inicio Função obter Link Afiliado
   function buscarLinkAfiliado() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     const pessoaId = localStorage.getItem("pessoaId");
     app.dialog.preloader("Carregando...");
   
@@ -595,7 +1221,7 @@ async function validarToken(userAuthToken) {
   
   //Inicio Funçao listar pedidos tela Pedidos
   function listarPedidos(searchQuery = "") {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     var pessoaId = localStorage.getItem("pessoaId");
     app.dialog.preloader("Carregando...");
   
@@ -712,7 +1338,7 @@ async function validarToken(userAuthToken) {
   
   //Inicio Funçao listar Vendas
   function listarVendas(searchQuery = "") {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     var pessoaId = localStorage.getItem("pessoaId");
     app.dialog.preloader("Carregando...");
   
@@ -754,46 +1380,47 @@ async function validarToken(userAuthToken) {
           vendasContainer.innerHTML = "";
   
           vendas.forEach((venda) => {
+
             const vendasHTML = `                    
                           <div class="card-list" 
-                          data-id-venda="${venda.pedido_id}">
+                          data-id-venda="${venda.venda_id}">
                              <div class="card-principal">
                                 <div class="card-header open header-pago">
                                    <div class="date">${formatarData(
                                      venda.data_criacao
                                    )}</div>
                                    <div class="status">${
-                                     venda.cliente.status_compra
+                                     venda.status_compra
                                    }</div>
                                 </div>
                                 <div class="card-body">
                                    <div class="name">PEDIDO #${
-                                     venda.pedido_id
+                                     venda.venda_id
                                    }</div>
                                    <div class="details">
                                       <div class="detail">
                                          <span>Nº</span>
-                                         <span>${venda.pedido_id}</span>
+                                         <span>${venda.venda_id}</span>
                                       </div>
                                       <div class="detail">
                                          <span class="mdi mdi-cash-multiple"></span>
                                          <span>${
-                                           venda.forma_pagamento.opcao
+                                           venda.forma_pagamento.forma
                                          }</span>
                                       </div>
                                       <div class="detail">
                                          <span>Total</span>
                                          <span>${formatarMoeda(
-                                           venda.cliente.valor_total
+                                           venda.valor_total
                                          )}</span>
                                       </div>
                                       <div class="detail">
                                          <span>A pagar</span>
                                          <span>${formatarMoeda(
-                                           venda.cliente.valor_total
+                                           venda.valor_total
                                          )}</span>
                                       </div>
-                                      <div class="items">${venda.pedido_id}</div>
+                                      <div class="items">${venda.quantidade_itens}</div>
                                    </div>
                                 </div>
                              </div>
@@ -805,7 +1432,7 @@ async function validarToken(userAuthToken) {
           $(".card-list").click(function () {
             // Atualiza o ícone de seleção
             var vendaId = $(this).data("id-venda");
-            localStorage.setItem("pedidoId", vendaId);
+            localStorage.setItem("vendaId", vendaId);
             app.views.main.router.navigate("/resumo-venda/");
           });
   
@@ -832,9 +1459,202 @@ async function validarToken(userAuthToken) {
   }
   //Fim Função Lista Vendas
   
+  // Início da função detalhesVendas
+  function detalhesVenda() {
+    
+    var vendaId = localStorage.getItem("vendaId");
+    var pessoaId = localStorage.getItem("pessoaId");
+    app.dialog.preloader("Carregando...");
+  
+    // Cabeçalhos da requisição
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + userAuthToken,
+    };
+    const dados = {
+      vendedor: pessoaId,
+      venda_id: vendaId,
+    };
+  
+    const body = JSON.stringify({
+      class: "PedidoDigitalRest",
+      method: "MinhasVendasDigitais",
+      dados: dados
+    });
+  
+    // Opções da requisição
+    const options = {
+      method: "POST",
+      headers: headers,
+      body: body,
+    };
+  
+    // Fazendo a requisição
+    fetch(apiServerUrl, options)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        // Verifica se o status é 'success' e se há dados de pedidos
+        if (
+          responseJson.status === "success" &&
+          responseJson.data &&
+          responseJson.data.data
+        ) {
+          const detalhes = responseJson.data.data[0];
+          const detalhesContainer = document.getElementById("detalhesVenda");
+          detalhesContainer.innerHTML = "";
+  
+          // Formata a data e moeda
+          const formatarData = (data) => new Date(data).toLocaleString();
+          const formatarMoeda = (valor) =>
+            `R$ ${parseFloat(valor).toFixed(2).replace(".", ",")}`;
+  
+          // Monta o HTML dos itens do pedido
+          const itensHTML = detalhes.itens
+            .map(
+              (item) => `
+                      <li>
+                          <img src="https://vitatop.tecskill.com.br/${
+                            item.foto
+                          }" alt="${
+                item.descricao
+              }" style="width: 50px; height: 50px;"/>
+                          <span class="item-name">${item.descricao}</span>
+                          <span class="item-quantity">${item.qtde}x</span>
+                          <span class="item-price">${formatarMoeda(
+                            item.preco
+                          )}</span>
+                      </li>
+                  `
+            )
+            .join("");
+  
+          // Monta o HTML completo
+          const detalhesHTML = `
+                      <div class="order-summary">
+                          <div class="order-details">
+                              <p><h3>Número do Pedido: #${detalhes.venda_id}</h3></p>
+                              <p><strong>Data do Pedido:</strong> ${formatarData(
+                                detalhes.data_criacao
+                              )}</p>
+                          </div>
+                          <div class="order-items">
+                              <h3>Itens do Pedido</h3>
+                              <ul>${itensHTML}</ul>
+                          </div>
+                          <div class="order-payment">
+                              <h3>Forma de Pagamento</h3>
+                              <p><strong>Método:</strong> ${
+                                detalhes.forma_pagamento.forma
+                              }</p>
+                              <p><strong>Status:</strong> ${
+                                detalhes.forma_pagamento.transacao_mensagem
+                              }</p>
+                              <!-- Seção de pagamento -->
+                              <div class="payment-method-a display-none" id="pagamentoPix">
+                                  <div class="payment-center">
+                                      <img src="https://vitatop.tecskill.com.br/${
+                                        detalhes.forma_pagamento.pix_qrcode
+                                      }" width="250px" alt="QR Code">
+                                      <span class="pix-key" id="pixKey">${
+                                        detalhes.forma_pagamento.pix_key
+                                      }</span>
+                                      <button class="copy-button" id="copiarPix">Copiar Código Pix</button>
+                                  </div>
+                              </div>
+                              <!-- Seção de pagamento -->
+                              <div class="payment-method-a display-none" id="pagamentoBoleto">
+                                  <div class="payment-center">
+                                      <span class="pix-key" id="linhaBoleto">${
+                                        detalhes.forma_pagamento.boleto_linhadigitavel
+                                      }</span>
+                                      <button class="copy-button" id="copiarBoleto">Copiar Linha Digitável</button>
+                                      <button class="copy-button" id="baixarBoleto">Baixar Boleto PDF</button>
+                                  </div>
+                              </div>
+                              <!-- Seção de pagamento -->
+                              <div class="payment-method-a display-none" id="pagamentoCartao">
+                                  <div class="payment-center">
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="order-total">
+                              <h3>Resumo</h3>
+                              <p><strong>Total dos Itens:</strong> ${formatarMoeda(
+                                detalhes.valor_produto
+                              )}</p>
+                              <p><strong>Frete:</strong> ${formatarMoeda(
+                                detalhes.frete
+                              )}</p>
+                              <p><strong>Total:</strong> ${formatarMoeda(
+                                detalhes.valor_total
+                              )}</p>
+                          </div>
+                      </div>
+                  `;
+  
+          detalhesContainer.innerHTML = detalhesHTML;
+          if (detalhes.status_compra != 3) {
+            $(".pagamento-display").removeClass("display-none");
+          }
+          if (detalhes.forma_pagamento == "PIX") {
+            $("#pagamentoPix").removeClass("display-none");
+          } else if (detalhes.forma_pagamento == "BOLETO") {
+            $("#pagamentoBoleto").removeClass("display-none");
+          } else {
+            $("#pagamentoCartao").removeClass("display-none");
+          }
+  
+          $("#copiarPix").on("click", function () {
+            copiarParaAreaDeTransferencia(detalhes.pix_key);
+          });
+  
+          $("#copiarBoleto").on("click", function () {
+            copiarParaAreaDeTransferencia(detalhes.boleto_linhadigitavel);
+          });
+  
+          // Baixar boleto
+          $("#baixarBoleto").on("click", function () {
+            app.dialog.confirm(
+              "Deseja baixar o boleto no navegador?",
+              function () {
+                var ref = cordova.InAppBrowser.open(
+                  detalhes.boleto_impressao,
+                  "_system",
+                  "location=no,zoom=no"
+                );
+                ref.show();
+              }
+            );
+          });
+  
+          app.dialog.close();
+        } else {
+          app.dialog.close();
+          // Verifica se há uma mensagem de erro definida
+          const errorMessage =
+            responseJson.message || "Formato de dados inválido";
+          app.dialog.alert(
+            "Erro ao carregar pedidos: " + errorMessage,
+            "Falha na requisição!"
+          );
+        }
+      })
+      .catch((error) => {
+        app.dialog.close();
+        console.error("Erro:", error);
+        app.dialog.alert(
+          "Erro ao carregar pedidos: " + error.message,
+          "Falha na requisição!"
+        );
+      });
+  
+    localStorage.removeItem("pedidoId");
+  }
+  // Fim da função detalhesVendas
+
   // Início da função detalhesPedido
   function detalhesPedido() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     var pedidoId = localStorage.getItem("pedidoId");
     app.dialog.preloader("Carregando...");
   
@@ -1030,7 +1850,7 @@ async function validarToken(userAuthToken) {
   
   //Inicio Funçao Listar Banners
   function listarBanners() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const headers = {
       "Content-Type": "application/json",
@@ -1087,7 +1907,7 @@ async function validarToken(userAuthToken) {
   
   //Inicio Funçao CEP
   function cepEndereco(cep) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const headers = {
       "Content-Type": "application/json",
@@ -1116,26 +1936,6 @@ async function validarToken(userAuthToken) {
           $("#bairroEndCliente").val(dadosEndereco.bairro);
           $("#cidadeEndCliente").val(dadosEndereco.cidade);
           $("#estadoEndCliente").val(dadosEndereco.uf);
-  
-          // Remover a classe display-none para exibir os campos preenchidos
-          document
-            .getElementById("divLogradouroCliente")
-            .classList.remove("display-none");
-          document
-            .getElementById("divNumeroCliente")
-            .classList.remove("display-none");
-          document
-            .getElementById("divComplementoCliente")
-            .classList.remove("display-none");
-          document
-            .getElementById("divBairroCliente")
-            .classList.remove("display-none");
-          document
-            .getElementById("divCidadeCliente")
-            .classList.remove("display-none");
-          document
-            .getElementById("divEstadoCliente")
-            .classList.remove("display-none");
         } else {
           console.error("Erro ao obter dados do endereço:", responseJson.message);
         }
@@ -1151,10 +1951,55 @@ async function validarToken(userAuthToken) {
   }
   //Fim Função CEP
   
+    //Inicio Funçao CEP Editar
+    function cepEnderecoEdit(cep) {
+      
+      app.dialog.preloader("Carregando...");
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + userAuthToken,
+      };
+      const dados = {
+        cep: cep,
+      };
+      const body = JSON.stringify({
+        class: "PessoaRestService",
+        method: "ConsultaCEP",
+        dados: dados,
+      });
+      const options = {
+        method: "POST",
+        headers: headers,
+        body: body,
+      };
+      fetch(apiServerUrl, options)
+        .then((response) => response.json())
+        .then((responseJson) => {
+          app.dialog.close();
+          if (responseJson.status === "success") {
+            var dadosEndereco = responseJson.data;
+            $("#logradouroEndEdit").val(dadosEndereco.rua);
+            $("#bairroEndEdit").val(dadosEndereco.bairro);
+            $("#cidadeEndEdit").val(dadosEndereco.cidade);
+            $("#estadoEndEdit").val(dadosEndereco.uf);
+          } else {
+            console.error("Erro ao obter dados do endereço:", responseJson.message);
+          }
+        })
+        .catch((error) => {
+          app.dialog.close();
+          console.error("Erro:", error);
+          app.dialog.alert(
+            "Erro ao buscar endereço: " + error.message,
+            "Falha na requisição!"
+          );
+        });
+    }
+    //Fim Função CEP Editar
     
   //Inicio Funçao Listar Notificações
   function listarNotificacoes() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     var userId = localStorage.getItem("userId");
     app.dialog.preloader("Carregando...");
     
@@ -1342,7 +2187,7 @@ async function validarToken(userAuthToken) {
 // Inicio da Funçao que apaga a notificação
 function apagarNotificacao(notificacaoId) {
   app.dialog.preloader("Apagando...");
-  var userAuthToken = localStorage.getItem("userAuthToken");
+  
   
   const headers = {
     "Content-Type": "application/json",
@@ -1381,7 +2226,7 @@ function apagarNotificacao(notificacaoId) {
 
   //Inicio Funçao Listar Categorias
   function listarCategoriasCurso() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     // Cabeçalhos da requisição
     const headers = {
@@ -1446,7 +2291,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio da funçao contagem Notificações
   function buscarQtdeNotif() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     var userId = localStorage.getItem("userId");
   
     // Cabeçalhos da requisição
@@ -1492,137 +2337,21 @@ function apagarNotificacao(notificacaoId) {
   }
   //Fim da funçao contagem Notificações
   
-  //Inicio Funçao Listar Endereços
-  function listarEnderecos() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
-    app.dialog.preloader("Carregando...");
-    const pessoaId = localStorage.getItem("pessoaId");
-    // Cabeçalhos da requisição
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-  
-    const body = JSON.stringify({
-      class: "PessoaRestService",
-      method: "listarPessoa",
-      pessoa_id: pessoaId,
-    });
-  
-    // Opções da requisição
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-  
-    // Fazendo a requisição
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        // Verifica se o status é 'success' e se há dados de pedidos
-        if (responseJson.data.status === "success") {
-          const enderecos = responseJson.data.data.enderecos;
-          $("#listaDeEnderecos").html("");
-  
-          // Gera a lista de endereços
-          enderecos.forEach((endereco, index) => {
-            var complemento = endereco.complemento
-              ? `<span>${endereco.complemento}</span>`
-              : "";
-            var enderecoHTML = `
-                          <div class="card-content card-content-padding" style="background:#fff; border-radius: 10px;"> 
-                              <div class="row" style="display: flex; margin-bottom:8px;">
-                                  <div class="col-80">
-                                      <span>${endereco.rua}</span>, <span>${endereco.numero}</span><br>
-                                      <span>${complemento}</span> Bairro: <span>${endereco.bairro}</span><br>
-                                      <span>${endereco.municipio.nome}</span> - <span>${endereco.estado.sigla}</span><br>
-                                      CEP: <span>${endereco.cep}</span><br>
-                                  </div>
-                                  <div class="col-20"><br>
-                                      <a href="#" 
-                                      data-entrega-id="${endereco.id}"
-                                      data-entrega-rua="${endereco.rua}"
-                                      data-entrega-numero="${endereco.numero}"
-                                      data-entrega-complemento="${complemento}"
-                                      data-entrega-bairro="${endereco.bairro}"
-                                      data-entrega-cidade="${endereco.municipio.nome}"
-                                      data-entrega-estado="${endereco.estado.sigla}"
-                                      data-entrega-cep="${endereco.cep}"
-                                       class="link click-endereco"><b class="text-skin">Selecionar</b></a>
-                                  </div>
-                              </div>
-                          </div>
-                      `;
-  
-            $("#listaDeEnderecos").append(enderecoHTML);
-          });
-  
-          // Adiciona o evento de clique para atualizar o endereço selecionado
-          $(".click-endereco").on("click", function (e) {
-            e.preventDefault();
-            const enderecoId = $(this).data("entrega-id");
-  
-            // Atualiza o localStorage com o ID do endereço selecionado
-            var enderecoDetalhes = {
-              enderecoId: $(this).data("entrega-id"),
-              endEntregaRua: $(this).data("entrega-rua"),
-              endEntregaNumero: $(this).data("entrega-numero"),
-              endEntregaComplemento: $(this).data("entrega-complemento"),
-              endEntregaBairro: $(this).data("entrega-bairro"),
-              endEntregaCidade: $(this).data("entrega-cidade"),
-              endEntregaEstado: $(this).data("entrega-estado"),
-              endEntregaCep: $(this).data("entrega-cep"),
-            };
-            localStorage.setItem(
-              "enderecoDetalhes",
-              JSON.stringify(enderecoDetalhes)
-            );
-  
-            selecionarEndereco(enderecoId);
-            // Fechar o dialog ou outra ação necessária após seleção do endereço
-            app.popup.close();
-  
-            var toastCenter = app.toast.create({
-              text: `Endereço de entrega alterado`,
-              position: "center",
-              closeTimeout: 2000,
-            });
-  
-            toastCenter.open();
-          });
-  
-          // Fechar o dialog ou outra ação necessária após preenchimento do select
-          app.dialog.close();
-        } else {
-          app.dialog.close();
-          // Tratar caso o status não seja "success"
-          console.error(
-            "Erro ao obter dados de endereços:",
-            responseJson.message
-          );
-        }
-      })
-      .catch((error) => {
-        app.dialog.close();
-        console.error("Erro:", error);
-        app.dialog.alert(
-          "Erro ao carregar endereços: " + error.message,
-          "Falha na requisição!"
-        );
-      });
-  }
-  //Fim Função Listar Endereços
-  
   //Inicio Funçao Selecionar Endereço
-  function selecionarEndereco(enderecoId) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+  function selecionarEndereco(enderecoSelecionado) {
+    app.dialog.preloader("Carregando...");
+    
     const pessoaId = localStorage.getItem("pessoaId");
   
+    const endereco = enderecoSelecionado;
+
     const dados = {
       pessoa_id: pessoaId,
-      endereco_id: enderecoId,
+      endereco_id: endereco.id,
     };
+  
+    // Armazena o endereço selecionado no localStorage
+    localStorage.setItem("enderecoSelecionado", endereco.id);
   
     // Cabeçalhos da requisição
     const headers = {
@@ -1635,6 +2364,7 @@ function apagarNotificacao(notificacaoId) {
       method: "AlterarEndereco",
       dados: dados,
     });
+  
     // Opções da requisição
     const options = {
       method: "POST",
@@ -1646,30 +2376,196 @@ function apagarNotificacao(notificacaoId) {
     fetch(apiServerUrl, options)
       .then((response) => response.json())
       .then((responseJson) => {
-        // Verifica se o status é 'success'
         if (
           responseJson.status == "success" &&
           responseJson.data.status == "success"
         ) {
-          // Dados a serem armazenados
+          app.dialog.close();
           var valorFrete = responseJson.data.data.frete;
-          console.log(valorFrete);
   
-          //MOSTRAR O VALOR FRETE
-          $("#freteCarrinho").html(
-            "Alterar " +
-              valorFrete.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })
+          // Atualiza o valor do frete na interface
+          $("#fretePedido").html(
+            valorFrete.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })
           );
+  
+          // Destacar o endereço selecionado na interface
+          $(".select-address").removeClass("text-blue-700 font-bold");
+          $(`.select-address[data-id='${endereco.id}']`).addClass("text-blue-700 font-bold");
+    
+          if (endereco) {           
+          $("#selectedAddress").html(`
+            <div class="flex items-start space-x-3">
+              <svg class="w-5 h-5 text-gray-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 class="font-medium">${endereco.nome_endereco || "Residencial"}</h3>
+                  ${endereco.principal == "S" ? 
+                    `<span class="px-2 py-0.5 text-white text-xs rounded-full" style="background-color: #ff7b39">Principal</span>` : ""}
+                </div>
+                <p class="text-gray-600 text-sm mt-1">
+                  ${endereco.rua}, ${endereco.numero} - ${endereco.bairro}
+                </p>
+                <p class="text-gray-600 text-sm">
+                  ${endereco.municipio.nome}, ${endereco.estado.sigla} - CEP: ${endereco.cep}
+                </p>
+              </div>
+            </div>
+          `);
+          }
+        } else {          
+          app.dialog.close();
         }
       })
       .catch((error) => {
+        app.dialog.close();
         console.error("Erro:", error);
       });
-  }
+  }  
   //Fim Função Selecionar Endereço
+
+  // Início Função Listar Endereços
+function listarEnderecos() {
+  
+  app.dialog.preloader("Carregando...");
+  const pessoaId = localStorage.getItem("pessoaId");
+
+  // Cabeçalhos da requisição
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + userAuthToken,
+  };
+
+  const body = JSON.stringify({
+    class: "PessoaRestService",
+    method: "listarPessoa",
+    pessoa_id: pessoaId,
+  });
+
+  // Opções da requisição
+  const options = {
+    method: "POST",
+    headers: headers,
+    body: body,
+  };
+
+  // Fazendo a requisição
+  fetch(apiServerUrl, options)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      if (responseJson.data.status === "success") {
+        const enderecos = responseJson.data.data.enderecos;
+        $("#listaDeEnderecos").html(""); // Limpa a lista
+
+        let enderecoPrincipal = null;
+        let ultimoEndereco = null;
+
+        enderecos.forEach((endereco, index) => {
+          ultimoEndereco = endereco; // Atualiza o último endereço iterado
+
+          var enderecoHTML = `
+            <div class="border rounded-lg p-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <span class="font-medium">${endereco.nome_endereco || "Residencial"}</span>
+                    ${endereco.principal == "S" ? 
+                    `<span class="px-2 py-0.5 text-white text-xs rounded-full" style="background-color: #ff7b39">Principal</span>` : ""}
+                  </div>
+                  <p class="text-gray-600 text-sm">
+                    ${endereco.rua}, ${endereco.numero} - ${endereco.bairro}
+                  </p>
+                  <p class="text-gray-600 text-sm">
+                    ${endereco.municipio.nome}, ${endereco.estado.sigla} - CEP: ${endereco.cep}
+                  </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button class="text-gray-400 hover:text-gray-600 edit-address">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                    </svg>
+                  </button>
+                  <button class="text-blue-500 hover:text-blue-700 select-address">
+                    Selecionar
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          if (endereco.principal == "S") {
+            enderecoPrincipal = endereco;
+          }
+
+          $("#listaDeEnderecos").append(enderecoHTML);
+          // Atribuindo o objeto endereco ao botão clicado
+          $(".edit-address").last().data("editarEndereco", endereco);
+          $(".select-address").last().data("endereco", endereco);
+        });
+
+        $(".edit-address").on('click', function () {
+          let editarEndereco = $(this).data("editarEndereco");
+          $("#idEnderecoEdit").val(editarEndereco.id);
+          $("#nomeEnderecoEdit").val(editarEndereco.nome_endereco);
+          $("#cepEdit").val(editarEndereco.cep);
+          $("#logradouroEndEdit").val(editarEndereco.rua);
+          $("#numeroEndEdit").val(editarEndereco.numero);
+          $("#complementoEndEdit").val(editarEndereco.complemento);
+          $("#bairroEndEdit").val(editarEndereco.bairro);
+          $("#cidadeEndEdit").val(editarEndereco.cidade);
+          $("#estadoEndEdit").val(editarEndereco.estado.sigla);
+          // Definir o estado do checkbox baseado no valor de is_principal
+          if (editarEndereco.principal == 'S') {
+              $("#defaultAddressEdit").prop("checked", true); // Marca o checkbox
+          } else {
+              $("#defaultAddressEdit").prop("checked", false); // Desmarca o checkbox
+          }
+
+          document.getElementById('addressModal').classList.add('hidden');
+          document.getElementById('editAddressModal').classList.remove('hidden');
+
+        });
+        
+        $(".closeEditAddressModal").on('click', function () {
+          document.getElementById('editAddressModal').classList.add('hidden');
+          document.getElementById('addressModal').classList.remove('hidden');
+        });
+
+        // Define o endereço selecionado automaticamente
+        let enderecoSelecionado = enderecoPrincipal || ultimoEndereco;
+        if (enderecoSelecionado) {
+          // Chama a função para selecionar o endereço e recalcular o frete
+          selecionarEndereco(enderecoSelecionado);
+        }
+
+        // Adiciona evento para recalcular o frete ao trocar o endereço
+        $(".select-address").click(function () {
+          let endereco = $(this).data("endereco");
+          selecionarEndereco(endereco);
+          $("#addressModal").addClass("hidden");
+        });
+        
+
+        app.dialog.close();
+      } else {
+        app.dialog.close();
+        console.error("Erro ao obter dados de endereços:", responseJson.message);
+      }
+    })
+    .catch((error) => {
+      app.dialog.close();
+      console.error("Erro:", error);
+      app.dialog.alert("Erro ao carregar endereços: " + error.message, "Falha na requisição!");
+    });
+}
+// Fim Função Listar Endereços
+
   
   //Inicio Funçao Listar Categorias
   function finalizarCompra(
@@ -1679,11 +2575,10 @@ function apagarNotificacao(notificacaoId) {
     data_expiracao,
     cvc
   ) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const pessoaId = localStorage.getItem("pessoaId");
-    var enderecoDetalhes = JSON.parse(localStorage.getItem("enderecoDetalhes"));
-    const enderecoEntregaId = enderecoDetalhes.enderecoId;
+    const enderecoEntregaId = localStorage.getItem("enderecoSelecionado");
   
     const data = {
       class: "PagamentoSafe2payRest",
@@ -1778,7 +2673,7 @@ function apagarNotificacao(notificacaoId) {
     data_expiracao,
     cvc
   ) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const pedidoId = localStorage.getItem("pedidoIdPagamento");
   
@@ -1860,7 +2755,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio Funçao Listar Carrinho
   function listarCarrinho() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const pessoaId = localStorage.getItem("pessoaId");
   
@@ -1910,46 +2805,94 @@ function apagarNotificacao(notificacaoId) {
             //PERCORRER O NOSSO CARRINHO E ALIMENTAR A ÁREA
             responseJson.data.data.itens.forEach((item) => {
               var itemDiv = `
-                          <!-- ITEM DO CARRINHO-->
-                          <div class="item-carrinho">
-                              <div class="area-img">
-                                  <img src="https://vitatop.tecskill.com.br/${
+              
+                  <div class="flex space-x-4" style="margin-bottom: 18px;">
+                    <img
+                      src="https://vitatop.tecskill.com.br/${
                                     item.foto
-                                  }">
-                              </div>
-                              <div class="area-details">
-                                  <div class="sup">
-                                      <span class="name-prod">
-                                      ${item.nome}
-                                      </span>
-                                      <a data-produto-id="${
+                                  }"
+                      alt="${item.nome}"
+                      class="w-20 h-20 rounded-lg object-cover"
+                    />
+                    <div class="flex-1">
+                      <div class="flex justify-between">
+                        <h3 class="font-medium">${item.nome}</h3>
+                        <button class="text-red-500 delete-item" style="width: 30px;"
+                        data-produto-id="${
                                         item.produto_id
-                                      }" class="delete-item" href="#">
-                                          <i class="mdi mdi-close"></i>
-                                      </a>
-                                  </div>
-                                  <div class="preco-quantidade">
-                                      <span>${formatarMoeda(
-                                        item.preco_unitario
-                                      )}</span>
-                                      <div class="count">
-                                          <a class="minus" data-produto-id="${
+                                      }">
+                          <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            ></path>
+                          </svg>
+                        </button>
+                      </div>
+                      <p class="text-gray-500 text-sm mb-2">Premium</p>
+                      <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                          <button
+                            class="minus w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"
+                            data-produto-id="${
                                             item.produto_id
                                           }" data-produto-qtde="${
-                item.quantidade
-              }" href="#">-</a>
-                                          <input readonly class="qtd-item" type="text" value="${
                                             item.quantidade
-                                          }">
-                                          <a class="plus" data-produto-id="${
+                                          }"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20 12H4"
+                              ></path>
+                            </svg>
+                          </button>
+                          <span class="w-8 text-center">${
+                            item.quantidade
+                          }</span>
+                          <button
+                            class="plus w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"
+                            data-produto-id="${
                                             item.produto_id
                                           }" data-produto-qtde="${
-                item.quantidade
-              }" href="#">+</a>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
+                                            item.quantidade
+                                          }"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4v16m8-8H4"
+                              ></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <span class="font-semibold">${formatarMoeda(
+                          item.preco_unitario
+                        )}</span>
+                      </div>
+                    </div>
+                  </div>
                           `;
   
               $("#listaCarrinho").append(itemDiv);
@@ -2001,6 +2944,13 @@ function apagarNotificacao(notificacaoId) {
                 currency: "BRL",
               })
             );
+            //MOSTRAR O SUBTOTAL
+            $("#totalCarrinho").html(
+              total.toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })
+            );
           } else {
             //MOSTRAR CARRINHO VAZIO
             //ESVAZIAR LISTA DO CARRINHO
@@ -2018,7 +2968,9 @@ function apagarNotificacao(notificacaoId) {
                       `);
           }
   
-          app.dialog.close();
+          
+          listarEnderecos(); 
+          app.dialog.close();          
         }
       })
       .catch((error) => {
@@ -2034,7 +2986,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio Funçao Alterar Carrinho
   function alterarCarrinho(pessoaId, produtoId, quantidade) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
   
     const dados = {
@@ -2071,6 +3023,7 @@ function apagarNotificacao(notificacaoId) {
           responseJson.status == "success" &&
           responseJson.data.status == "sucess"
         ) {
+          console.log(responseJson)
           // Sucesso na alteração
           app.views.main.router.refreshPage();
           app.dialog.close();
@@ -2091,9 +3044,10 @@ function apagarNotificacao(notificacaoId) {
   function adicionarEndereco() {
     app.dialog.preloader("Carregando...");
   
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     const pessoaId = localStorage.getItem("pessoaId");
     // Captura os valores dos inputs
+    var nomeEndereco = $("#nomeEndereco").val();
     var cep = $("#cepCliente").val();
     var logradouro = $("#logradouroEndCliente").val();
     var numero = $("#numeroEndCliente").val();
@@ -2101,9 +3055,11 @@ function apagarNotificacao(notificacaoId) {
     var bairro = $("#bairroEndCliente").val();
     var cidade = $("#cidadeEndCliente").val();
     var estado = $("#estadoEndCliente").val();
+    var isPrincipal = $("#defaultAddress").prop("checked") ? "S" : "N";
   
     const dados = {
       pessoa_id: pessoaId,
+      nome_endereco: nomeEndereco,
       cep: cep,
       endereco: logradouro,
       numero: numero,
@@ -2112,6 +3068,7 @@ function apagarNotificacao(notificacaoId) {
       cidade: cidade,
       estado: estado,
       tipo: 1,
+      is_principal: isPrincipal
     };
   
     // Cabeçalhos da requisição
@@ -2151,7 +3108,8 @@ function apagarNotificacao(notificacaoId) {
           listarEnderecos();
           toastCenter.open();
           app.dialog.close();
-          app.popup.close(".popup-novo-endereco");
+          $("#newAddressModal").addClass("hidden");
+          $("#addressModal").addClass("hidden");
         }
       })
       .catch((error) => {
@@ -2161,14 +3119,102 @@ function apagarNotificacao(notificacaoId) {
           "Erro ao alterar carrinho: " + error.message,
           "Falha na requisição!"
         );
-        app.popup.close(".popup-novo-endereco");
+        $("#newAddressModal").addClass("hidden");
+        $("#addressModal").addClass("hidden");
       });
   }
   //Fim Função Adicionar Endereço
   
+  //Inicio Editar Endereço
+  function editarEndereco() {
+    app.dialog.preloader("Carregando...");
+  
+    
+    const pessoaId = localStorage.getItem("pessoaId");
+    // Captura os valores dos inputs
+    var enderecoId = $("#idEnderecoEdit").val();
+    var nomeEndereco = $("#nomeEnderecoEdit").val();
+    var cep = $("#cepEdit").val();
+    var logradouro = $("#logradouroEndEdit").val();
+    var numero = $("#numeroEndEdit").val();
+    var complemento = $("#complementoEndEdit").val();
+    var bairro = $("#bairroEndEdit").val();
+    var cidade = $("#cidadeEndEdit").val();
+    var estado = $("#estadoEndEdit").val();
+    var isPrincipal = $("#defaultAddressEdit").prop("checked") ? "S" : "N";
+  
+    const dados = {
+      endereco_id: enderecoId,
+      pessoa_id: pessoaId,
+      nome_endereco: nomeEndereco,
+      cep: cep,
+      endereco: logradouro,
+      numero: numero,
+      complemento: complemento,
+      bairro: bairro,
+      cidade: cidade,
+      estado: estado,
+      tipo: 1,
+      is_principal: isPrincipal
+    };
+  
+    // Cabeçalhos da requisição
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + userAuthToken,
+    };
+  
+    const body = JSON.stringify({
+      class: "EnderecoRest",
+      method: "salvarEnderecoEntrega",
+      dados: dados,
+    });
+  
+    // Opções da requisição
+    const options = {
+      method: "POST",
+      headers: headers,
+      body: body,
+    };
+  
+    // Fazendo a requisição
+    fetch(apiServerUrl, options)
+      .then((response) => response.json())
+      .then((responseJson) => {
+        // Verifica se o status é 'success'
+        if (
+          responseJson.status == "success" &&
+          responseJson.data.status == "success"
+        ) {
+          app.dialog.close();
+          // Sucesso na alteração
+          var toastCenter = app.toast.create({
+            text: `Endereço editado com sucesso`,
+            position: "center",
+            closeTimeout: 2000,
+          });
+          listarEnderecos();
+          toastCenter.open();
+          $("#editAddressModal").addClass("hidden");
+          $("#addressModal").addClass("hidden");
+        }
+      })
+      .catch((error) => {
+        app.dialog.close();
+        console.error("Erro:", error);
+        app.dialog.alert(
+          "Erro ao alterar carrinho: " + error.message,
+          "Falha na requisição!"
+        );
+        $("#editAddressModal").addClass("hidden");
+        $("#addressModal").addClass("hidden");
+      });
+  }
+  //Fim Função Editar Endereço
+
   //Inicio Adicionar Item Carrinho
   function adicionarItemCarrinho(produtoId) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     const pessoaId = localStorage.getItem("pessoaId");
     app.dialog.preloader("Carregando...");
   
@@ -2208,7 +3254,7 @@ function apagarNotificacao(notificacaoId) {
         ) {
           // Sucesso na alteração
           var toastCenter = app.toast.create({
-            text: `${produto.nome} adicionado ao carrinho`,
+            text: `Produto adicionado ao carrinho`,
             position: "center",
             closeTimeout: 2000,
           });
@@ -2237,7 +3283,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio Remover Item do Carrinho
   function removerItemCarrinho(pessoaId, produtoId) {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     console.log(pessoaId);
     console.log(produtoId);
@@ -2297,7 +3343,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio Funçao Esvaziar Carrinho
   function limparCarrinho() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     const pessoaId = localStorage.getItem("pessoaId");
     app.dialog.preloader("Carregando...");
   
@@ -2349,62 +3395,62 @@ function apagarNotificacao(notificacaoId) {
   }
   //Fim Função Esvaziar Carrinho
   
-  //Inicio Funçao contar Carrinho
-  function contarCarrinho() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
-    const pessoaId = localStorage.getItem("pessoaId");
+//Inicio Funçao contar Carrinho
+function contarCarrinho() {
   
-    const dados = {
-      pessoa_id: pessoaId,
-    };
-  
-    // Cabeçalhos da requisição
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-  
-    const body = JSON.stringify({
-      class: "PagamentoSafe2payRest",
-      method: "ListarCarrinho",
-      dados: dados,
+  const pessoaId = localStorage.getItem("pessoaId");
+
+  const dados = {
+    pessoa_id: pessoaId,
+  };
+
+  // Cabeçalhos da requisição
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + userAuthToken,
+  };
+
+  const body = JSON.stringify({
+    class: "PagamentoSafe2payRest",
+    method: "ListarCarrinho",
+    dados: dados,
+  });
+
+  // Opções da requisição
+  const options = {
+    method: "POST",
+    headers: headers,
+    body: body,
+  };
+
+  // Fazendo a requisição
+  fetch(apiServerUrl, options)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      // Verifica se o status é 'success'
+      if (
+        responseJson.status == "success" &&
+        responseJson.data.status == "sucess"
+      ) {
+        // Supondo que responseJson seja o objeto que você obteve no console.log
+        const quantidadeItens = responseJson.data.data.itens.length;
+        
+        // Atualizar o contador no cabeçalho
+        $(".btn-cart").attr("data-count", quantidadeItens);
+        
+        // Atualizar o contador na barra inferior
+        $(".cart-badge").attr("data-count", quantidadeItens);
+      }
+    })
+    .catch((error) => {
+      console.error("Erro:", error);
     });
-  
-    // Opções da requisição
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-  
-    // Fazendo a requisição
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        // Verifica se o status é 'success'
-        if (
-          responseJson.status == "success" &&
-          responseJson.data.status == "sucess"
-        ) {
-          // Supondo que responseJson seja o objeto que você obteve no console.log
-          const quantidadeItens = responseJson.data.data.itens.length;
-          $(".btn-cart").attr("data-count", quantidadeItens);
-        }
-      })
-      .catch((error) => {
-        app.dialog.close();
-        console.error("Erro:", error);
-        app.dialog.alert(
-          "Erro ao listar carrinho: " + error.message,
-          "Falha na requisição!"
-        );
-      });
-  }
-  //Fim Função contar Carrinho
+}
+//Fim Função contar Carrinho
   
   //Inicio Funçao Dados Dashboard
   function onDashboard() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     const pessoaId = localStorage.getItem("pessoaId");
   
     const dados = {
@@ -2457,7 +3503,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio Funçao Listar Carrinho Checkout
   function listarCarrinhoCheckout() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const pessoaId = localStorage.getItem("pessoaId");
   
@@ -2563,7 +3609,7 @@ function apagarNotificacao(notificacaoId) {
   
   //Inicio Funçao Listar Equipe
   function listarEquipe() {
-    var userAuthToken = localStorage.getItem("userAuthToken");
+    
     app.dialog.preloader("Carregando...");
     const pessoaId = localStorage.getItem("pessoaId");
   
@@ -2642,6 +3688,250 @@ function apagarNotificacao(notificacaoId) {
   }
   //Fim Função Listar Equipe
   
+  // Funções para a página de campanhas
+
+// Listar campanhas
+// Função para carregar as categorias de campanha do servidor
+function carregarCategoriasCampanha() {
+  app.dialog.preloader("Carregando...");
+
+  // Cabeçalhos da requisição
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + userAuthToken,
+  };
+
+  const body = JSON.stringify({
+    class: "CampanhaRestService",
+    method: "listarCategoriasCampanha",
+  });
+
+  // Opções da requisição
+  const options = {
+    method: "POST",
+    headers: headers,
+    body: body,
+  };
+
+  // Fazendo a requisição
+  fetch(apiServerUrl, options)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      // Verifica se o status é 'success' e se há dados de categorias
+      if (
+        responseJson.status === "success" &&
+        responseJson.data &&
+        responseJson.data.status === "success"
+      ) {
+        const categorias = responseJson.data.data;
+        
+        // Limpa o container de categorias
+        $(".campaign-categories").empty();
+
+        // Adiciona a opção "Todas" ao início
+        var opcaoTodasHTML = `
+          <div class="category-pill active" data-category="all">Todas</div>
+        `;
+        $(".campaign-categories").append(opcaoTodasHTML);
+
+        // Adiciona cada categoria
+        categorias.forEach((categoria) => {
+          var categoriaHTML = `
+            <div class="category-pill" data-category="${categoria.id}">${categoria.nome}</div>
+          `;
+          $(".campaign-categories").append(categoriaHTML);
+        });
+
+        // Adiciona o evento de clique às categorias
+        $(".category-pill").on("click", function() {
+          $(".category-pill").removeClass("active");
+          $(this).addClass("active");
+          
+          const categoriaId = $(this).data("category");
+          listarCampanhas(categoriaId);
+        });
+
+        app.dialog.close();
+      } else {
+        app.dialog.close();
+        // Verifica se há uma mensagem de erro definida
+        const errorMessage =
+          responseJson.message || "Formato de dados inválido";
+        app.dialog.alert(
+          "Erro ao carregar categorias: " + errorMessage,
+          "Falha na requisição!"
+        );
+      }
+    })
+    .catch((error) => {
+      app.dialog.close();
+      console.error("Erro:", error);
+      app.dialog.alert(
+        "Erro ao carregar categorias: " + error.message,
+        "Falha na requisição!"
+      );
+    });
+}
+
+// Função para listar campanhas, opcionalmente filtradas por categoria
+function listarCampanhas(categoriaId = "all") {
+  app.dialog.preloader("Carregando...");
+
+  // Cabeçalhos da requisição
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + userAuthToken,
+  };
+
+  // Prepara o body da requisição, incluindo categoria_id se for necessário
+  const bodyData = {
+    class: "CampanhaRestService",
+    method: "listarCampanhas"
+  };
+  
+  // Adiciona o filtro por categoria se não for "all"
+  if (categoriaId !== "all") {
+    bodyData.categoria_id = categoriaId;
+  }
+
+  const body = JSON.stringify(bodyData);
+
+  // Opções da requisição
+  const options = {
+    method: "POST",
+    headers: headers,
+    body: body,
+  };
+
+  // Fazendo a requisição
+  fetch(apiServerUrl, options)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      // Verifica se o status é 'success' e se há dados de campanhas
+      if (
+        responseJson.status === "success" &&
+        responseJson.data &&
+        responseJson.data.status === "success"
+      ) {
+        const campanhas = responseJson.data.data;
+        
+        // Limpa o container das campanhas e remove os skeletons
+        $("#container-campanhas").empty();
+        $(".skeleton-card").remove();
+
+        // Verifica se há campanhas para exibir
+        if (campanhas.length === 0) {
+          $("#container-campanhas").html(`
+            <div class="no-campaigns">
+              <i class="mdi mdi-calendar-blank"></i>
+              <p>Nenhuma campanha encontrada nesta categoria</p>
+            </div>
+          `);
+        } else {
+          // Para cada campanha, cria um card
+          campanhas.forEach((campanha) => {
+            const dataInicio = new Date(campanha.data_inicio);
+            const dataFim = campanha.data_fim ? new Date(campanha.data_fim) : null;
+            
+            // Formata as datas para exibição
+            const dataInicioFormatada = formatarData(dataInicio);
+            const dataFimFormatada = dataFim ? formatarData(dataFim) : "Sem data de término";
+            
+            // Define a tag da campanha ou usa a categoria como fallback
+            let tagTexto = campanha.tag || getCategoriaLabel(campanha.categoria_id);
+            
+            // Define uma imagem padrão caso não tenha
+            const imagemCampanha = campanha.imagem 
+              ? "https://vitatop.tecskill.com.br/" + campanha.imagem 
+              : "img/default-campaign.jpg";
+            
+            // HTML do card da campanha
+            const campanhaHTML = `
+              <div class="campaign-card" data-id="${campanha.id}" data-link="${campanha.link || '/produtos/?campanha=' + campanha.id}">
+                <img src="${imagemCampanha}" alt="${campanha.titulo}" class="campaign-image">
+                <div class="campaign-content">
+                  <h3 class="campaign-title">${campanha.titulo}</h3>
+                  <p class="campaign-subtitle">${campanha.subtitulo || ""}</p>
+                  <div class="campaign-period">
+                    <i class="mdi mdi-calendar"></i>
+                    ${dataInicioFormatada} ${dataFim ? " até " + dataFimFormatada : ""}
+                  </div>
+                  <div class="campaign-tag ${getCategoriaClass(campanha.categoria_id)}">${tagTexto}</div>
+                </div>
+              </div>
+            `;
+            
+            $("#container-campanhas").append(campanhaHTML);
+          });
+          
+          // Adiciona evento de clique aos cards
+          $(".campaign-card").on("click", function () {
+            const link = $(this).attr("data-link");
+            if (link) {
+              app.views.main.router.navigate(link);
+            }
+          });
+        }
+
+        app.dialog.close();
+      } else {
+        app.dialog.close();
+        
+        // Exibe uma mensagem se não há campanhas ou ocorreu um erro
+        $("#container-campanhas").html(`
+          <div class="no-campaigns">
+            <i class="mdi mdi-calendar-blank"></i>
+            <p>Nenhuma campanha disponível no momento</p>
+          </div>
+        `);
+        
+        console.error("Erro ao carregar campanhas ou nenhuma campanha disponível");
+      }
+    })
+    .catch((error) => {
+      app.dialog.close();
+      console.error("Erro:", error);
+      $("#container-campanhas").html(`
+        <div class="no-campaigns">
+          <i class="mdi mdi-alert-circle-outline"></i>
+          <p>Erro ao carregar campanhas. Tente novamente mais tarde.</p>
+        </div>
+      `);
+    });
+}
+
+// Função auxiliar para obter a classe CSS baseada na categoria
+function getCategoriaClass(categoriaId) {
+  switch (categoriaId) {
+    case "1":
+      return "promocao";
+    case "2":
+      return "saude";
+    case "3":
+      return "data-especial";
+    case "4":
+      return "lancamento";
+    default:
+      return "";
+  }
+}
+
+// Função auxiliar para obter o nome da categoria pelo ID
+function getCategoriaLabel(categoriaId) {
+  switch (categoriaId) {
+    case "1":
+      return "Promoção";
+    case "2":
+      return "Saúde";
+    case "3":
+      return "Data Especial";
+    case "4":
+      return "Lançamento";
+    default:
+      return "Campanha";
+  }
+}
+
   //Inicio da Funçao formatar Moeda
   function formatarMoeda(valor) {
     var precoFormatado = parseFloat(valor).toLocaleString("pt-BR", {
@@ -2661,6 +3951,7 @@ function apagarNotificacao(notificacaoId) {
   // Função para limpar o local storage
   function clearLocalStorage() {
     localStorage.removeItem("produtoId");
+    localStorage.removeItem("enderecoSelecionado");
     localStorage.removeItem("produto");
     localStorage.removeItem("enderecoDetalhes");
     localStorage.removeItem("emailRecuperacao");

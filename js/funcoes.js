@@ -52,124 +52,97 @@ function deleteCookie(name) {
 // Fim função validar login
   
   //Inicio Funçao listar categorias
-// Updated listarCategorias function
+// Função estática para listar categorias - mantém exatamente a mesma estrutura
 function listarCategorias() {
+  console.log("Carregando categorias estáticas");
   
+  // Simular carregamento
   app.dialog.preloader("Carregando...");
+  
+  // Dados estáticos - 3 categorias para demonstração
+  const categorias = [
+    {
+      id: 1,
+      nome: "Serviços",
+      icone: "ri-tools-line"
+    },
+    {
+      id: 2,
+      nome: "Sistemas",
+      icone: "ri-windows-line"
+    },
+    {
+      id: 3,
+      nome: "Certificado Digital",
+      icone: "ri-shield-check-line"
+    }
+  ];
+  
+  // Limpar o container de categorias
+  $("#container-categorias").empty();
 
-  // Cabeçalhos da requisição
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: "Bearer " + userAuthToken,
-  };
+  // Adiciona a opção Todas ao inicio
+  var opcaoTodasHTML = `
+    <div class="category-item active" data-id="todas">
+      <div class="category-icon">
+        <i class="mdi mdi-apps"></i>
+      </div>
+      <div class="category-name">Todas</div>
+    </div>
+  `;
+  $("#container-categorias").append(opcaoTodasHTML);
 
-  const body = JSON.stringify({
-    class: "ProdutoCategoriaRest",
-    method: "listarCategorias",
+  // Adicione cada categoria
+  categorias.forEach((categoria) => {
+    var categoriaHTML = `
+      <div class="category-item" data-id="${categoria.id}">
+        <div class="category-icon">
+          <i class="${categoria.icone}"></i>
+        </div>
+        <div class="category-name">${categoria.nome}</div>
+      </div>
+    `;
+  
+    $("#container-categorias").append(categoriaHTML);
   });
 
-  // Opções da requisição
-  const options = {
-    method: "POST",
-    headers: headers,
-    body: body,
-  };
+  // Adicione manipuladores de eventos para os itens de categoria
+  $(".category-item").on("click", function() {
+    // Remove a classe ativa de todos os itens
+    $(".category-item").removeClass("active");
+    
+    // Adiciona a classe ativa ao item clicado
+    $(this).addClass("active");
+    
+    // Pega o id da categoria clicada
+    var categoriaId = $(this).data("id");
+    
+    // Se for "todas", define como undefined para listar todos os produtos
+    if(categoriaId === "todas") {
+      categoriaId = undefined;
+    }
+    
+    // Chama a função listarProdutos com o id da categoria
+    listarProdutos("", categoriaId);
+    
+    // Centraliza o item selecionado
+    scrollToCategory(this);
+    
+    // Atualiza os indicadores de rolagem
+    updateScrollIndicators();
+  });
+  
+  // Configurar os indicadores de rolagem
+  setupScrollIndicators();
+  
+  // Configurar botões de rolagem
+  setupScrollButtons();
+  
+  // Mostrar dica de rolagem na primeira vez
+  showSwipeHint();
 
-  // Fazendo a requisição
-  fetch(apiServerUrl, options)
-    .then((response) => response.json())
-    .then((responseJson) => {
-      // Verifica se o status é 'success' e se há dados de categorias
-      if (
-        responseJson.status === "success" &&
-        responseJson.data &&
-        responseJson.data.data
-      ) {
-        const categorias = responseJson.data.data;
-        
-        // Limpar o container de categorias
-        $("#container-categorias").empty();
-
-        // Adiciona a opção Todas ao inicio
-        var opcaoTodasHTML = `
-          <div class="category-item active" data-id="todas">
-            <div class="category-icon">
-              <i class="mdi mdi-apps"></i>
-            </div>
-            <div class="category-name">Todas</div>
-          </div>
-        `;
-        $("#container-categorias").append(opcaoTodasHTML);
-
-        // Adicione cada categoria
-        categorias.forEach((categoria) => {
-          var categoriaHTML = `
-            <div class="category-item" data-id="${categoria.id}">
-              <div class="category-icon">
-                <i class="${categoria.icone}"></i>
-              </div>
-              <div class="category-name">${categoria.nome}</div>
-            </div>
-          `;
-        
-          $("#container-categorias").append(categoriaHTML);
-        });
-
-        // Adicione manipuladores de eventos para os itens de categoria
-        $(".category-item").on("click", function() {
-          // Remove a classe ativa de todos os itens
-          $(".category-item").removeClass("active");
-          
-          // Adiciona a classe ativa ao item clicado
-          $(this).addClass("active");
-          
-          // Pega o id da categoria clicada
-          var categoriaId = $(this).data("id");
-          
-          // Se for "todas", define como undefined para listar todos os produtos
-          if(categoriaId === "todas") {
-            categoriaId = undefined;
-          }
-          
-          // Chama a função listarProdutos com o id da categoria
-          listarProdutos("", categoriaId);
-          
-          // Centraliza o item selecionado
-          scrollToCategory(this);
-          
-          // Atualiza os indicadores de rolagem
-          updateScrollIndicators();
-        });
-        
-        // Configurar os indicadores de rolagem
-        setupScrollIndicators();
-        
-        // Configurar botões de rolagem
-        setupScrollButtons();
-        
-        // Mostrar dica de rolagem na primeira vez
-        showSwipeHint();
-
-        app.dialog.close();
-      } else {
-        app.dialog.close();
-        // Verifica se há uma mensagem de erro definida
-        const errorMessage =
-          responseJson.message || "Formato de dados inválido";
-        app.dialog.alert(
-          "Erro ao carregar categorias: " + errorMessage,
-          "Falha na requisição!"
-        );
-      }
-    })
-    .catch((error) => {
-      app.dialog.close();
-      console.error("Erro:", error);
-      app.dialog.alert(
-        "Erro ao carregar categorias: " + error.message,
-        "Falha na requisição!"
-      );
-    });
+  // Fechar o diálogo
+  app.dialog.close();
 }
 
 // Função para rolar até a categoria selecionada
@@ -367,143 +340,142 @@ function showSwipeHint() {
   //Fim Função Lista categorias
   
   //Inicio Funçao listar produtos tela Home
-// Updated listarProdutos function to match the new single-line layout
-function listarProdutos(searchQuery = "", categoriaId) {
+  function listarProdutos(searchQuery = "", categoriaId = null) {
+    console.log("Carregando produtos estáticos, busca:", searchQuery, "categoria:", categoriaId);
+    
+    // Simular carregamento
+    app.dialog.preloader("Carregando...");
+    
+    // Simular tempo de carregamento
+    setTimeout(() => {
+      // Array de produtos estáticos
+      const produtos = [
+        {
+          id: 1,
+          nome: "Complexo Vitamínico Multi-Mineral",
+          preco: "89.90",
+          preco2: "99.90",
+          preco_lojavirtual: "89.90",
+          foto: "img/produto1.jpg",
+          categoria_id: 1
+        },
+        {
+          id: 2,
+          nome: "Proteína Vegetal 100% Natural",
+          preco: "129.90",
+          preco2: "149.90",
+          preco_lojavirtual: "129.90",
+          foto: "img/produto2.jpg",
+          categoria_id: 2
+        },
+        {
+          id: 3,
+          nome: "Óleo de Coco Extravirgem Orgânico",
+          preco: "59.90",
+          preco2: "69.90",
+          preco_lojavirtual: "59.90",
+          foto: "img/produto3.jpg",
+          categoria_id: 3
+        }
+      ];
   
-  app.dialog.preloader("Carregando...");
-
-  var imgUrl = "https://vitatop.tecskill.com.br/";
-
-  // Cabeçalhos da requisição
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: "Bearer " + userAuthToken,
-  };
-
-  const body = JSON.stringify({
-    class: "ProdutoVariacaoRest",
-    method: "listarProdutos",
-    categoria_id: categoriaId,
-    search: searchQuery,
-    limit: 30,
-  });
-
-  // Opções da requisição
-  const options = {
-    method: "POST",
-    headers: headers,
-    body: body,
-  };
-
-  // Fazendo a requisição
-  fetch(apiServerUrl, options)
-    .then((response) => response.json())
-    .then((responseJson) => {
-      // Verifica se o status é 'success' e se há dados de pedidos
-      if (
-        responseJson.status === "success" &&
-        responseJson.data &&
-        responseJson.data.data
-      ) {
-        const produtos = responseJson.data.data;
-        $("#container-produtos").empty();
-
-        produtos.forEach((produto) => {
-          var produtoPreco = formatarMoeda(produto.preco_lojavirtual);
-
-          var imgUrl = "https://vitatop.tecskill.com.br/";
-          const imagemProduto = produto.foto
-            ? imgUrl + produto.foto
-            : "img/default.png";
-          const nomeProduto = truncarNome(produto.nome, 40); // Increased character limit
-          const rating = 5;
-
-          var produtoHTML = `
-                  <!-- ITEM CARD-->
-                  <div class="item-card">
-                      <a data-id="${produto.id}" 
-                      data-nome="${produto.nome}" 
-                      data-preco="${produto.preco}"
-                      data-preco2="${produto.preco2}"
-                      data-preco_lojavirtual="${produto.preco_lojavirtual}"
-                      data-imagem="${imagemProduto}"
-                      href="#" class="item">
-                          <div class="img-container">
-                              <img src="${imagemProduto}" alt="${nomeProduto}">
-                          </div>
-                          <div class="nome-rating">
-                                  <span class="color-gray product-name">${nomeProduto.toLocaleUpperCase()}</span>                     
-                              <div class="star-rating">
-                                  <span class="star"></span>
-                                  <span class="star"></span>
-                                  <span class="star"></span>
-                                  <span class="star"></span>
-                                  <span class="star"></span>
-                              </div>
-                              <div class="price">${produtoPreco}</div>
-                          </div> 
-                      </a>
-                  </div>
-                  `;
-          $("#container-produtos").append(produtoHTML);
-          
-          // Selecionar as estrelas apenas do produto atual
-          const stars = $("#container-produtos")
-            .children()
-            .last()
-            .find(".star-rating .star");
-
-          // Preencher as estrelas conforme o rating do produto atual
-          for (let i = 0; i < rating; i++) {
-            stars[i].classList.add("filled");
-          }
-        });
-        
-        // Adicionar evento de clique
-        $(".item").on("click", function () {
-          var id = $(this).attr("data-id");
-          var nomeProduto = $(this).attr("data-nome");
-          var preco = $(this).attr("data-preco");
-          var preco2 = $(this).attr("data-preco2");
-          var preco_lojavirtual = $(this).attr("data-preco_lojavirtual");
-          var imagem = $(this).attr("data-imagem");
-          localStorage.setItem("produtoId", id);
-          const produto = {
-            id: id,
-            imagem: imagem,
-            nome: nomeProduto,
-            rating: 5,
-            likes: 5,
-            reviews: 5,
-            preco: preco,
-            preco2: preco2,
-            preco_lojavirtual: preco_lojavirtual,
-          };
-          localStorage.setItem("produto", JSON.stringify(produto));
-          app.views.main.router.navigate("/detalhes/");
-        });
-
-        app.dialog.close();
-      } else {
-        app.dialog.close();
-        // Verifica se há uma mensagem de erro definida
-        const errorMessage =
-          responseJson.message || "Formato de dados inválido";
-        app.dialog.alert(
-          "Erro ao carregar produtos: " + errorMessage,
-          "Falha na requisição!"
+      // Filtrar produtos se uma pesquisa for fornecida
+      let produtosFiltrados = produtos;
+      
+      if (searchQuery && searchQuery.length >= 3) {
+        produtosFiltrados = produtos.filter(p => 
+          p.nome.toLowerCase().includes(searchQuery.toLowerCase())
         );
       }
-    })
-    .catch((error) => {
+      
+      // Filtrar por categoria se fornecida
+      if (categoriaId) {
+        produtosFiltrados = produtosFiltrados.filter(p => 
+          p.categoria_id == categoriaId
+        );
+      }
+      
+      // Limpar o container de produtos
+      $("#container-produtos").empty();
+  
+      // Adicionar produtos filtrados
+      produtosFiltrados.forEach((produto) => {
+        var produtoPreco = formatarMoeda(parseFloat(produto.preco_lojavirtual));
+        const imagemProduto = produto.foto ? produto.foto : "img/default.png";
+        const nomeProduto = truncarNome(produto.nome, 40);
+        const rating = 5;
+  
+        var produtoHTML = `
+          <!-- ITEM CARD-->
+          <div class="item-card">
+            <a data-id="${produto.id}" 
+               data-nome="${produto.nome}" 
+               data-preco="${produto.preco}"
+               data-preco2="${produto.preco2}"
+               data-preco_lojavirtual="${produto.preco_lojavirtual}"
+               data-imagem="${imagemProduto}"
+               href="#" class="item">
+              <div class="img-container">
+                <img src="${imagemProduto}" alt="${nomeProduto}">
+              </div>
+              <div class="nome-rating">
+                <span class="color-gray product-name">${nomeProduto.toLocaleUpperCase()}</span>                     
+                <div class="star-rating">
+                  <span class="star"></span>
+                  <span class="star"></span>
+                  <span class="star"></span>
+                  <span class="star"></span>
+                  <span class="star"></span>
+                </div>
+                <div class="price">${produtoPreco}</div>
+              </div> 
+            </a>
+          </div>
+        `;
+        
+        $("#container-produtos").append(produtoHTML);
+        
+        // Selecionar as estrelas apenas do produto atual
+        const stars = $("#container-produtos")
+          .children()
+          .last()
+          .find(".star-rating .star");
+  
+        // Preencher as estrelas conforme o rating do produto atual
+        for (let i = 0; i < rating; i++) {
+          stars[i].classList.add("filled");
+        }
+      });
+      
+      // Adicionar evento de clique
+      $(".item").on("click", function () {
+        var id = $(this).attr("data-id");
+        var nomeProduto = $(this).attr("data-nome");
+        var preco = $(this).attr("data-preco");
+        var preco2 = $(this).attr("data-preco2");
+        var preco_lojavirtual = $(this).attr("data-preco_lojavirtual");
+        var imagem = $(this).attr("data-imagem");
+        localStorage.setItem("produtoId", id);
+        const produto = {
+          id: id,
+          imagem: imagem,
+          nome: nomeProduto,
+          rating: 5,
+          likes: 5,
+          reviews: 5,
+          preco: preco,
+          preco2: preco2,
+          preco_lojavirtual: preco_lojavirtual,
+        };
+        localStorage.setItem("produto", JSON.stringify(produto));
+        app.views.main.router.navigate("/detalhes/");
+      });
+  
+      // Fechar o diálogo de carregamento
       app.dialog.close();
-      console.error("Erro:", error);
-      app.dialog.alert(
-        "Erro ao carregar produtos: " + error.message,
-        "Falha na requisição!"
-      );
-    });
-}
+      
+    }, 500); // Simular meio segundo de carregamento
+  }
   //Fim Função Lista produtos
   
 //Inicio Função Detalhes Produto
@@ -1849,60 +1821,42 @@ function openImageZoom(imageSrc) {
   // Fim da função detalhesPedido
   
   //Inicio Funçao Listar Banners
-  function listarBanners() {
-    
-    app.dialog.preloader("Carregando...");
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-    const dados = {
-      local: 1,
-    };
-    const body = JSON.stringify({
-      class: "BannerRest",
-      method: "ListaBanner",
-      dados: dados,
-    });
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        app.dialog.close();
-        if (responseJson.status === "success") {
-          const banners = responseJson.data;
-          // Seleciona o wrapper do Swiper
-          const swiperWrapper = document.querySelector(".swiper-wrapper");
-          // Limpa os slides existentes
-          swiperWrapper.innerHTML = "";
-          // Adiciona os novos slides
-          banners.forEach((banner) => {
-            const slide = document.createElement("div");
-            slide.classList.add("swiper-slide");
-            const img = document.createElement("img");
-            img.classList.add("img-fluid");
-            img.src = banner.url_arquivo;
-            img.alt = banner.titulo;
-            slide.appendChild(img);
-            swiperWrapper.appendChild(slide);
-          });
-        } else {
-          console.error("Erro ao obter banners:", responseJson.message);
-        }
-      })
-      .catch((error) => {
-        app.dialog.close();
-        console.error("Erro:", error);
-        app.dialog.alert(
-          "Erro ao carregar banners: " + error.message,
-          "Falha na requisição!"
-        );
-      });
-  }
+// Função estática para listar banners (substitui a original)
+function listarBanners() {
+  console.log("Carregando banners estáticos");
+  
+  // Array de banners estáticos
+  const banners = [
+    {
+      id: 1,
+      titulo: "Promoção de Vitaminas",
+      url_arquivo: "img/banner1.jpg"
+    },
+    {
+      id: 2,
+      titulo: "Suplementos Naturais",
+      url_arquivo: "img/banner2.jpg"
+    }
+  ];
+
+  // Seleciona o wrapper do Swiper
+  const swiperWrapper = document.querySelector(".swiper-wrapper");
+  
+  // Limpa os slides existentes
+  swiperWrapper.innerHTML = "";
+  
+  // Adiciona os novos slides
+  banners.forEach((banner) => {
+    const slide = document.createElement("div");
+    slide.classList.add("swiper-slide");
+    const img = document.createElement("img");
+    img.classList.add("img-fluid");
+    img.src = banner.url_arquivo;
+    img.alt = banner.titulo;
+    slide.appendChild(img);
+    swiperWrapper.appendChild(slide);
+  });
+}
   //Fim Função Listar Banners
   
   //Inicio Funçao CEP

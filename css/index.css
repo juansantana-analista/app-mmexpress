@@ -4,7 +4,7 @@
   --verde: #19c463;
   --preto: #2a2a2a;
   --laranja: #ff5500;
-  --verde-escuro: #00591F;
+  --verde-escuro: #1d4f91;
   --verde-claro: #7CBE42;
   --rosa: #ffc0cb;
 }
@@ -1389,14 +1389,14 @@ form {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: var(--verde-escuro);
+  background-color: #e9006e;
   margin-bottom: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
 }
 
 .category-item.active .category-icon {
-  background-color: var(--verde-escuro);
+  background-color: #e9006e;
   box-shadow: 0 3px 10px rgba(0,100,0,0.15);
   transform: scale(1.05);
 }

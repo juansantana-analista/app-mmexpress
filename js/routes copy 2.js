@@ -48,7 +48,7 @@ var app = new Framework7({
               app.views.main.router.navigate('/notificacoes/');
             } else {
               // Lógica para continuar usando o token
-              app.views.main.router.navigate("/produtos/");              
+              app.views.main.router.navigate("/home/");              
             }
           }
           var userName = localStorage.getItem('userName');
@@ -472,7 +472,7 @@ var app = new Framework7({
                     //localStorage.setItem("validadeToken", decodedToken.expires);
 
                     setTimeout(function () {
-                      app.views.main.router.navigate("/produtos/");
+                      app.views.main.router.navigate("/home/");
                     }, 300);    
               //END Fazendo a requisição
             } else {
@@ -1021,7 +1021,7 @@ var app = new Framework7({
         },
         pageInit: function (event, page) {
           // fazer algo quando a página for inicializada
-          //contarCarrinho();
+          contarCarrinho();
           listarBanners();
 
           var swiper = new Swiper(".mySwiper", {
@@ -1707,9 +1707,9 @@ var app = new Framework7({
         },
         pageInit: function (event, page) {
           // fazer algo quando a página for inicializada
-          //contarCarrinho();
-          //carregarCategoriasCampanha();
-          //listarCampanhas();
+          contarCarrinho();
+          carregarCategoriasCampanha();
+          listarCampanhas();
 
           // Adiciona eventos aos filtros de categoria
           $('.category-pill').on('click', function() {
