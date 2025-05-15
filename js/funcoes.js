@@ -366,7 +366,7 @@ function listarProdutos(searchQuery = "", categoriaId = null) {
         preco: "89.90",
         preco2: "99.90",
         preco_lojavirtual: "89.90",
-        foto: "https://dnafinanceiro.com/blog/wp-content/uploads/2022/06/Certificado-Digital.jpg",
+        foto: "img/certificado.webp",
         categoria_id: 2
       },
       {
@@ -466,6 +466,69 @@ function listarProdutos(searchQuery = "", categoriaId = null) {
   //Fim Função Lista produtos
   
 //Inicio Função Detalhes Produto
+const beneficiosPorProduto = {
+  1: [  
+  {
+    id: "1a",
+    nome: "Relatórios Inteligentes",
+    descricao: "Relatórios básicos e avançados com análise de score, comportamento financeiro e histórico judicial para decisões estratégicas.",
+    icone: "fas fa-chart-line"
+  },
+  {
+    id: "1b",
+    nome: "Monitoramento com Alertas",
+    descricao: "Acompanhe até 300 CNPJs/CPFs com alertas automáticos sobre alterações cadastrais ou restrições. Reduza riscos com monitoramento contínuo.",
+    icone: "fas fa-bell"
+  },
+  {
+    id: "1c",
+    nome: "Análise de Crédito Segura",
+    descricao: "Consulte dados completos e atualizados para minimizar inadimplência e oferecer crédito com mais segurança e previsibilidade.",
+    icone: "fas fa-shield-alt"
+  },
+  {
+    id: "1d",
+    nome: "Cobrança e Recuperação",
+    descricao: "Localize, aborde e negocie com inadimplentes com base em dados da Serasa, aumentando os índices de recebimento de forma ativa.",
+    icone: "fas fa-file-invoice-dollar"
+  },
+  {
+    id: "1e",
+    nome: "Negativação Direta",
+    descricao: "Inclua devedores automaticamente na base da Serasa. Estimule renegociações com segurança, respaldo legal e processo documentado.",
+    icone: "fas fa-user-slash"
+  },
+  {
+    id: "1f",
+    nome: "Limpa Nome",
+    descricao: "Solução amigável para renegociação de dívidas. Restaure o relacionamento com clientes e reative oportunidades de venda.",
+    icone: "fas fa-broom"
+  }
+  ],
+  2: [
+  {
+    id: "2a",
+    nome: "E-CPF A1",
+    descricao: "Certificado digital para pessoas físicas. Ideal para assinatura de documentos, acesso a sistemas da Receita Federal e validade jurídica online.",
+    icone: "fas fa-id-card"
+  },
+  {
+    id: "2b",
+    nome: "E-CNPJ A1",
+    descricao: "Certificado digital para empresas. Permite emissão de notas fiscais eletrônicas, envio de obrigações acessórias e autenticação em portais oficiais.",
+    icone: "fas fa-briefcase"
+  }
+  ],
+  3: [
+    {
+    id: "3a",
+    nome: "TSControl Emissor de Nota",
+    descricao: "Sistema prático e eficiente para emissão de notas fiscais eletrônicas com validade legal, integração facilitada e suporte completo.",
+    icone: "fas fa-file-invoice"
+    }
+  ]
+};
+
 // Função para inicializar a exibição dos benefícios do produto
 function initializeBenefits(benefits) {
   // Container onde os benefícios serão inseridos
@@ -474,8 +537,8 @@ function initializeBenefits(benefits) {
   // Manter apenas o título dos benefícios
   benefitsContainer.innerHTML = `
       <div class="benefits-title">
-          Benefícios do Produto
-          <i class="fas fa-capsules"></i>
+          Produtos
+          <i class="fas fa-box"></i>
       </div>
   `;
   
@@ -488,7 +551,7 @@ function initializeBenefits(benefits) {
           benefitItem.setAttribute('data-benefit', benefit.id);
           
           benefitItem.innerHTML = `
-              <div class="benefit-icon" style="background-color: ${benefit.cor_icone || '#00a676'}">
+              <div class="benefit-icon" style="background-color: ${benefit.cor_icone || '#1d4f91'}">
                   <i class="${benefit.icone || 'fas fa-check'}"></i>
               </div>
               <div class="benefit-content">
@@ -556,202 +619,154 @@ function initializeBenefits(benefits) {
 
 // Modifica a função buscarProduto para usar os benefícios dinâmicos
 function buscarProduto(produtoId) {
-app.dialog.preloader("Carregando...");
+  app.dialog.preloader("Carregando...");
 
-var imgUrl = "https://vitatop.tecskill.com.br/";
+  const imgUrl = "img/";
 
-// Cabeçalhos da requisição
-const headers = {
-  "Content-Type": "application/json",
-  Authorization: "Bearer " + userAuthToken,
-};
-
-const body = JSON.stringify({
-  class: "ProdutoVariacaoRest",
-  method: "obterProdutoCompleto",
-  produto_id: produtoId,
-});
-
-// Opções da requisição
-const options = {
-  method: "POST",
-  headers: headers,
-  body: body,
-};
-
-// Fazendo a requisição
-fetch(apiServerUrl, options)
-  .then((response) => response.json())
-  .then((responseJson) => {
-    // Verifica se o status é 'success' e se há dados de pedidos
-    if (responseJson.status === "success" && responseJson.data.status === "success") {
-      const detalhes = responseJson.data.data;      
-      var produtoPreco = "";
-      
-      // Preparar as imagens para o carrossel
-      const fotoPrincipal = detalhes.foto ? imgUrl + detalhes.foto : "img/default.png";
-      
-      // Array para armazenar todas as fotos do produto
-      let fotos = [];
-      
-      // Adiciona a foto principal
-      if (detalhes.foto) {
-        fotos.push(imgUrl + detalhes.foto);
-      }
-      
-      // Verificar e adicionar fotos adicionais
-      if (detalhes.foto2) fotos.push(imgUrl + detalhes.foto2);
-      if (detalhes.foto3) fotos.push(imgUrl + detalhes.foto3);
-      if (detalhes.foto4) fotos.push(imgUrl + detalhes.foto4);
-      if (detalhes.foto5) fotos.push(imgUrl + detalhes.foto5);
-      if (detalhes.foto6) fotos.push(imgUrl + detalhes.foto6);
-      
-      // Se não houver fotos, adiciona a imagem padrão
-      if (fotos.length === 0) {
-        fotos.push("img/default.png");
-      }
-      
-      // Atualizar HTML para o carrossel principal
-      const swiperWrapper = document.querySelector("#product-gallery-main .swiper-wrapper");
-      const thumbsWrapper = document.querySelector("#product-gallery-thumbs .swiper-wrapper");
-      
-      if (swiperWrapper && thumbsWrapper) {
-        swiperWrapper.innerHTML = "";
-        thumbsWrapper.innerHTML = "";
-        
-        fotos.forEach((foto, index) => {
-          // Slides principais
-          const slide = document.createElement("div");
-          slide.className = "swiper-slide";
-          slide.innerHTML = `<img src="${foto}" alt="${detalhes.nome} - Imagem ${index+1}" class="product-image">`;
-          swiperWrapper.appendChild(slide);
-          
-          // Miniaturas
-          const thumbSlide = document.createElement("div");
-          thumbSlide.className = "swiper-slide";
-          thumbSlide.innerHTML = `<img src="${foto}" alt="Miniatura ${index+1}" class="thumb-image">`;
-          thumbsWrapper.appendChild(thumbSlide);
-        });
-        
-        // Inicializar o swiper de miniaturas
-        const thumbsSwiper = new Swiper("#product-gallery-thumbs", {
-          slidesPerView: 4,
-          spaceBetween: 10,
-          freeMode: true,
-          watchSlidesProgress: true,
-          breakpoints: {
-            // quando a largura da janela é >= 320px
-            320: {
-              slidesPerView: 3,
-              spaceBetween: 5
-            },
-            // quando a largura da janela é >= 480px
-            480: {
-              slidesPerView: 4,
-              spaceBetween: 8
-            },
-            // quando a largura da janela é >= 768px
-            768: {
-              slidesPerView: 5,
-              spaceBetween: 10
-            }
-          }
-        });
-        
-        // Inicializar o swiper principal
-        const mainSwiper = new Swiper("#product-gallery-main", {
-          slidesPerView: 1,
-          spaceBetween: 10,
-          loop: fotos.length > 1,
-          autoplay: {
-            delay: 5000, // Auto-play a cada 5 segundos
-            disableOnInteraction: false, // Continua o autoplay mesmo após interação
-            pauseOnMouseEnter: true // Pausa ao passar o mouse
-          },
-          pagination: {
-            el: ".swiper-pagination",
-            clickable: true,
-          },
-          navigation: {
-            nextEl: ".swiper-button-next",
-            prevEl: ".swiper-button-prev",
-          },
-          thumbs: {
-            swiper: thumbsSwiper,
-          }
-        });
-        
-        // Adicionar evento de clique para o zoom
-        document.querySelectorAll(".product-image").forEach((img) => {
-          img.addEventListener("click", function() {
-            openImageZoom(this.src);
-          });
-        });
-      }
-      
-      //ALIMENTAR COM OS VALORES DO ITEM
-      $("#imagem-detalhe").attr('src', fotoPrincipal);
-      $("#imagemShare").attr('src', fotoPrincipal);
-      $("#nome-detalhe").html(detalhes.nome.toUpperCase());
-      $("#nomeShare").html(detalhes.nome.toUpperCase());
-      
-      var precoLucro = detalhes.preco_lojavirtual - detalhes.preco;
-      $("#precoOriginal").html(formatarMoeda(detalhes.preco_lojavirtual));
-      $("#precoDesconto").html(formatarMoeda(detalhes.preco));
-      $("#precoRevenda").html(formatarMoeda(detalhes.preco_lojavirtual));
-      $("#precoLucro").html(formatarMoeda(precoLucro));
-      //$("#precopromo-detalhe").html(produtoPreco);
-
-      // Selecione a div onde você quer adicionar o link
-      const $container = $('#containerBtnCarrinho');
-      // Crie o link e configure os atributos
-      const $btnAddCarrinho = $('<button></button>')
-          .text('Adicionar Carrinho')
-          .attr('data-produto-id', '123')
-          .attr('id', 'botaoCarrinho')
-          .addClass('add-cart');
-  
-      // Anexe o link ao container
-      $container.append($btnAddCarrinho);
-      produtoId = detalhes.id;
-  
-      //CLICOU NO ADICIONAR CARRINHO
-      $("#addCarrinho").on('click', function () {
-          //ADICIONAR AO CARRINHO
-          adicionarItemCarrinho(produtoId);
-      });
-      
-      //CLICOU NO ADICIONAR CARRINHO
-      $("#comprarAgora").on('click', function () {
-          //ADICIONAR AO CARRINHO
-          adicionarItemCarrinho(produtoId);
-      });
-
-      // Inicializa os benefícios do produto
-      initializeBenefits(detalhes.beneficios);
-
-      localStorage.setItem('produtoDetalhes', JSON.stringify({detalhes}));
-      app.dialog.close();
-    } else {
-      app.dialog.close();
-      // Verifica se há uma mensagem de erro definida
-      const errorMessage =
-        responseJson.message || "Formato de dados inválido";
-      app.dialog.alert(
-        "Erro ao carregar produtos: " + errorMessage,
-        "Falha na requisição!"
-      );
+  // Lista de produtos estáticos
+  const produtos = {
+    1: {
+      id: 1,
+      nome: "Serasa",
+      preco: 50,
+      preco_lojavirtual: 80,
+      foto: "serasa.jpeg",
+      foto2: "",
+      beneficios: ["Benefício A", "Benefício B"]
+    },
+    2: {
+      id: 2,
+      nome: "Certificado Digital",
+      preco: 70,
+      preco_lojavirtual: 100,
+      foto: "certificado.webp",
+      beneficios: ["Benefício C"]
+    },
+    3: {
+      id: 3,
+      nome: "Emissor de Nota Fiscal",
+      preco: 90,
+      preco_lojavirtual: 130,
+      foto: "tscontrol.png",
+      foto2: "tscontrol.png",
+      beneficios: ["Benefício D", "Benefício E"]
     }
-  })
-  .catch((error) => {
+  };
+
+  const detalhes = produtos[produtoId];
+
+  if (!detalhes) {
     app.dialog.close();
-    console.error("Erro:", error);
-    app.dialog.alert(
-      "Erro ao carregar produtos: " + error.message,
-      "Falha na requisição!"
-    );
+    app.dialog.alert("Produto não encontrado!", "Erro");
+    return;
+  }
+
+  const fotoPrincipal = detalhes.foto ? imgUrl + detalhes.foto : "img/default.png";
+
+  let fotos = [];
+  if (detalhes.foto) fotos.push(imgUrl + detalhes.foto);
+  if (detalhes.foto2) fotos.push(imgUrl + detalhes.foto2);
+  if (detalhes.foto3) fotos.push(imgUrl + detalhes.foto3);
+  if (detalhes.foto4) fotos.push(imgUrl + detalhes.foto4);
+  if (detalhes.foto5) fotos.push(imgUrl + detalhes.foto5);
+  if (detalhes.foto6) fotos.push(imgUrl + detalhes.foto6);
+
+  if (fotos.length === 0) fotos.push("img/default.png");
+
+  const swiperWrapper = document.querySelector("#product-gallery-main .swiper-wrapper");
+  const thumbsWrapper = document.querySelector("#product-gallery-thumbs .swiper-wrapper");
+
+  if (swiperWrapper && thumbsWrapper) {
+    swiperWrapper.innerHTML = "";
+    thumbsWrapper.innerHTML = "";
+
+    fotos.forEach((foto, index) => {
+      const slide = document.createElement("div");
+      slide.className = "swiper-slide";
+      slide.innerHTML = `<img src="${foto}" alt="${detalhes.nome} - Imagem ${index+1}" class="product-image">`;
+      swiperWrapper.appendChild(slide);
+
+      const thumbSlide = document.createElement("div");
+      thumbSlide.className = "swiper-slide";
+      thumbSlide.innerHTML = `<img src="${foto}" alt="Miniatura ${index+1}" class="thumb-image">`;
+      thumbsWrapper.appendChild(thumbSlide);
+    });
+
+    const thumbsSwiper = new Swiper("#product-gallery-thumbs", {
+      slidesPerView: 4,
+      spaceBetween: 10,
+      freeMode: true,
+      watchSlidesProgress: true,
+      breakpoints: {
+        320: { slidesPerView: 3, spaceBetween: 5 },
+        480: { slidesPerView: 4, spaceBetween: 8 },
+        768: { slidesPerView: 5, spaceBetween: 10 }
+      }
+    });
+
+    const mainSwiper = new Swiper("#product-gallery-main", {
+      slidesPerView: 1,
+      spaceBetween: 10,
+      loop: fotos.length > 1,
+      autoplay: {
+        delay: 5000,
+        disableOnInteraction: false,
+        pauseOnMouseEnter: true
+      },
+      pagination: {
+        el: ".swiper-pagination",
+        clickable: true,
+      },
+      navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev",
+      },
+      thumbs: {
+        swiper: thumbsSwiper,
+      }
+    });
+
+    document.querySelectorAll(".product-image").forEach((img) => {
+      img.addEventListener("click", function() {
+        openImageZoom(this.src);
+      });
+    });
+  }
+
+  $("#imagem-detalhe").attr('src', fotoPrincipal);
+  $("#imagemShare").attr('src', fotoPrincipal);
+  $("#nome-detalhe").html(detalhes.nome.toUpperCase());
+  $("#nomeShare").html(detalhes.nome.toUpperCase());
+
+  var precoLucro = detalhes.preco_lojavirtual - detalhes.preco;
+  $("#precoOriginal").html(formatarMoeda(detalhes.preco_lojavirtual));
+  $("#precoDesconto").html(formatarMoeda(detalhes.preco));
+  $("#precoRevenda").html(formatarMoeda(detalhes.preco_lojavirtual));
+  $("#precoLucro").html(formatarMoeda(precoLucro));
+
+  const $container = $('#containerBtnCarrinho');
+  const $btnAddCarrinho = $('<button></button>')
+    .text('Adicionar Carrinho')
+    .attr('data-produto-id', detalhes.id)
+    .attr('id', 'botaoCarrinho')
+    .addClass('add-cart');
+
+  $container.append($btnAddCarrinho);
+
+  $("#addCarrinho").on('click', function () {
+    adicionarItemCarrinho(detalhes.id);
   });
+
+  $("#comprarAgora").on('click', function () {
+    adicionarItemCarrinho(detalhes.id);
+  });
+
+initializeBenefits(beneficiosPorProduto[produtoId] || []);
+
+  localStorage.setItem('produtoDetalhes', JSON.stringify({detalhes}));
+  app.dialog.close();
 }
+
 
 // Função para abrir o zoom da imagem
 function openImageZoom(imageSrc) {
@@ -915,131 +930,82 @@ function openImageZoom(imageSrc) {
   }
 }
 //Fim Função Detalhes Produto
-  
-  //Inicio Função obter Links
-  function buscarLinks(produtoId) {
-    
-    var codigo_indicador = localStorage.getItem("codigo_indicador");
-    app.dialog.preloader("Carregando...");
-  
-    var imgUrl = "https://vitatop.tecskill.com.br/";
-  
-    // Cabeçalhos da requisição
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + userAuthToken,
-    };
-  
-    const body = JSON.stringify({
-      class: "ProdutoLinkRest",
-      method: "loadAll",
-      filters: [["produto_id", "=", produtoId]],
-    });
-  
-    // Opções da requisição
-    const options = {
-      method: "POST",
-      headers: headers,
-      body: body,
-    };
-  
-    // Fazendo a requisição
-    fetch(apiServerUrl, options)
-      .then((response) => response.json())
-      .then((responseJson) => {
-        // Verifica se o status é 'success' e se há dados de pedidos
-        if (responseJson.status === "success") {
-          const links = responseJson.data;
-          let linkLandingPage = "";
-          let linkCheckout = "";
-  
-          //Limpa o container antes de copular
-          $("#qrcode").html("");
-          $("#ul-links").html("");
-  
-          links.forEach((link) => {
-            const linkUrl = truncarNome(link.link_url, 40);
-  
-            // Verifica se o tipo_link é igual a 1 e armazena o link_url
-            if (link.tipo_link == "1") {
-              linkLandingPage = link.link_url;
-              $("#paginaLinkUrl").html(linkUrl);
-            } else {
-              linkCheckout = link.link_url;
-              $("#checkoutLinkUrl").html(linkUrl);
-            }
-          });
-  
-          $("#shareLanding").on("click", function () {
-            // Pega o url do link clicado em share
-            //Abre opção compartilhamento
-            onCompartilhar(
-              "Link do Produto",
-              "Aproveite agora mesmo nosso produto",
-              linkLandingPage + codigo_indicador
-            );
-          });
-          $("#linkPaginaUrl").on("click", function () {
-            // Pega o url do link clicado em share
-            //Abre opção compartilhamento
-            onCompartilhar(
-              "Link do Produto",
-              "Aproveite agora mesmo nosso produto",
-              linkLandingPage + codigo_indicador
-            );
-          });
-          $("#linkCheckoutUrl").on("click", function () {
-            // Pega o url do link clicado em share
-            //Abre opção compartilhamento
-            onCompartilhar(
-              "Link do Produto",
-              "Aproveite agora mesmo nosso produto",
-              linkCheckout + codigo_indicador
-            );
-          });
-  
-          $(".compartilhar-link").on("click", function () {
-            // Pega o url do link clicado em share
-            var linkUrl = $(this).data("link");
-            //Abre opção compartilhamento
-  
-            onCompartilhar(
-              "Link do Produto",
-              "Aproveite agora mesmo nosso produto",
-              linkCheckout + codigo_indicador
-            );
-          });
-  
-          var qrcode = new QRCode(document.getElementById("qrcode"), {
-            text: linkLandingPage,
-            width: 130,
-            height: 130,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H,
-          });
-  
-          app.dialog.close();
-        } else {
-          app.dialog.close();
-          // Verifica se há uma mensagem de erro definida
-          const errorMessage =
-            responseJson.message || "Formato de dados inválido";
-          app.dialog.alert(
-            "Erro ao carregar links: " + errorMessage,
-            "Falha na requisição!"
-          );
-        }
-      })
-      .catch((error) => {
-        app.dialog.close();
-        console.error("Erro:", error);
-        app.dialog.alert(
-          "Erro ao carregar links: " + error.message,
-          "Falha na requisição!"
-        );
-      });
+  const linksPorProduto = {
+  1: {
+    landingPage: "https://mmexpress.matheusvn.com.br/?=",
+    checkout: "https://mmexpress.matheusvn.com.br/?="
+  },
+  2: {
+    landingPage: "https://mmcertificado.meiti.com.br/?=",
+    checkout: "https://mmcertificado.meiti.com.br/?="
+  },
+  3: {
+    landingPage: "https://vitatop.com/produto3/?=",
+    checkout: "https://vitatop.com/produto3/checkout/?="
   }
+};
+  //Inicio Função obter Links
+function buscarLinks(produtoId) {
+  const codigo_indicador = localStorage.getItem("codigo_indicador") || "";
+  app.dialog.preloader("Carregando...");
+
+  const links = linksPorProduto[produtoId];
+
+  if (!links) {
+    app.dialog.close();
+    app.dialog.alert("Links não encontrados para este produto.", "Erro");
+    return;
+  }
+
+  let linkLandingPage = links.landingPage;
+  let linkCheckout = links.checkout;
+
+  // Limpa o container antes de popular
+  $("#qrcode").html("");
+  $("#ul-links").html("");
+
+  // Preenche os campos com os links truncados
+  $("#paginaLinkUrl").html(truncarNome(linkLandingPage, 40));
+  $("#checkoutLinkUrl").html(truncarNome(linkCheckout, 40));
+
+  // Adiciona eventos de clique
+  $("#shareLanding, #linkPaginaUrl").on("click", function () {
+    onCompartilhar(
+      "Link do Produto",
+      "Aproveite agora mesmo nosso produto",
+      linkLandingPage + codigo_indicador
+    );
+  });
+
+  $("#linkCheckoutUrl").on("click", function () {
+    onCompartilhar(
+      "Link do Produto",
+      "Aproveite agora mesmo nosso produto",
+      linkCheckout + codigo_indicador
+    );
+  });
+
+  $(".compartilhar-link").on("click", function () {
+    onCompartilhar(
+      "Link do Produto",
+      "Aproveite agora mesmo nosso produto",
+      linkCheckout + codigo_indicador
+    );
+  });
+
+  // Gera o QRCode
+  new QRCode(document.getElementById("qrcode"), {
+    text: linkLandingPage,
+    width: 130,
+    height: 130,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H,
+  });
+
+  app.dialog.close();
+}
+
   //Fim Função obter Links
   
   //Inicio Função obter id da Pessoa
